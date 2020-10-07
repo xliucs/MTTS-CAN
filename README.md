@@ -15,7 +15,7 @@ Telehealth and remote health monitoring have become increasingly important durin
 
 
 
-## Waveform Samples
+<!--## Waveform Samples
 
 ### Pulse
 
@@ -24,7 +24,7 @@ Telehealth and remote health monitoring have become increasingly important durin
 
 ### Respiration 
 
-![resp_waveform](./resp_waveform.png)
+![resp_waveform](./resp_waveform.png)-->
 
 
 ## Citation 
@@ -41,7 +41,7 @@ Telehealth and remote health monitoring have become increasingly important durin
 
 ## TVM
 
-If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/docs/)  to set it up. 
+If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/docs/) to set it up. Then, you will need to replace the code in `incubator-tvm/python/tvm/relay/frontend/keras.py` with our `tvm-ops-mtts-can.py`.    
 
 
 ## Requirements
