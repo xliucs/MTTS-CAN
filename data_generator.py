@@ -1,9 +1,13 @@
+'''
+Data Generator for Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
+Author: Xin Liu
+'''
+
+import math
+
+import h5py
 import numpy as np
 from tensorflow import keras
-import h5py
-import math
-import os
-import tensorflow as tf
 
 
 class DataGenerator(keras.utils.Sequence):

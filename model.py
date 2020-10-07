@@ -1,3 +1,8 @@
+'''
+Models for Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
+Author: Xin Liu
+'''
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras import backend as K

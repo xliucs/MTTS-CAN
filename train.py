@@ -1,4 +1,6 @@
-'''Trains CNN iPPG DeepPhys Training:
+'''
+Training Script for Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
+Author: Xin Liu, Daniel McDuff
 '''
 # %%
 from __future__ import print_function
