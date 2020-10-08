@@ -50,8 +50,6 @@ parser.add_argument('-g', '--nb_epoch', type=int, default=24,
                     help='nb_epoch')
 parser.add_argument('-t', '--nb_task', type=int, default=12,
                     help='nb_task')
-parser.add_argument('-x', '--batch_size', type=int, default=8,
-                    help='batch')
 parser.add_argument('-fd', '--frame_depth', type=int, default=10,
                     help='frame_depth for CAN_3D, TS_CAN, Hybrid_CAN')
 parser.add_argument('-temp', '--temporal', type=str, default='MTTS_CAN',

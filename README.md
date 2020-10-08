@@ -1,3 +1,7 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+
+
 ## MTTS-CAN: Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
 
 
@@ -41,13 +45,20 @@ Telehealth and remote health monitoring have become increasingly important durin
 
 ## TVM
 
-If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/docs/) to set it up. Then, you will need to replace the code in `incubator-tvm/python/tvm/relay/frontend/keras.py` with our `tvm-ops-mtts-can.py`.    
+If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/docs/) to set it up. Then, you will need to replace the code in `incubator-tvm/python/tvm/relay/frontend/keras.py` with our `code/tvm-ops-mtts-can.py`. We implemented required tensor operations for attention, tensor shift module used in our models. 
+
+## Training 
+
+`python code/train.py --exp_name test --exp_name [e.g., test] --data_dir [DATASET_PATH] --temporal [e.g., MMTS_CAN]`
 
 
 ## Requirements
 
 
+Tensorflow 2.0+
 
+
+`conda create -n tf-gpu tensorflow-gpu cudatoolkit=10.1` -- this command takes care of both CUDA and TF environments. 
 
 
 
