@@ -60,7 +60,7 @@ Tensorflow 2.0+
 
 ## Contact
 
-`xliu at cs dot washington dot edu`
+`xliu0 at cs dot washington dot edu`
 
 
 
