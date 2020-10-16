@@ -58,6 +58,11 @@ Tensorflow 2.0+
 
 `conda create -n tf-gpu tensorflow-gpu cudatoolkit=10.1` -- this command takes care of both CUDA and TF environments. 
 
+## Notes
+
+Pre-trained models and tutorials of usage will be coming soon..
+
+
 ## Contact
 
 `xliu0 at cs dot washington dot edu`
