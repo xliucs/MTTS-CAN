@@ -49,6 +49,16 @@ If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/doc
 
 `python code/train.py --exp_name test --exp_name [e.g., test] --data_dir [DATASET_PATH] --temporal [e.g., MMTS_CAN]`
 
+## Inference 
+
+`python predict_vitals.py --video_path [VIDEO_PATH]`
+
+The default video sampling rate is 30Hz. 
+
+#### Note
+
+During the inference, the program will generate a sample pre-processed frame. Please ensure it is in portrait orientation. If not, you can comment out line 30 (rotation) in the `inference_preprocess.py`. 
+
 
 ## Requirements
 
@@ -58,9 +68,16 @@ Tensorflow 2.0+
 
 `conda create -n tf-gpu tensorflow-gpu cudatoolkit=10.1` -- this command takes care of both CUDA and TF environments. 
 
-## Notes
+`pip install opencv-python scipy numpy matplotlib`
 
-Pre-trained models and tutorials of usage will be coming soon..
+If`pip install opencv-python` does not work, I found these commands always work on my mac. 
+
+```
+conda install -c menpo opencv -y
+pip install opencv-python
+```
+
+
 
 
 ## Contact
