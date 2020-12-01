@@ -51,7 +51,7 @@ If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/doc
 
 ## Inference 
 
-`python predict_vitals.py --video_path [VIDEO_PATH]`
+`python code/predict_vitals.py --video_path [VIDEO_PATH]`
 
 The default video sampling rate is 30Hz. 
 
