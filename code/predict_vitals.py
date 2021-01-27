@@ -21,10 +21,14 @@ def predict_vitals(args):
     sample_data_path = args.video_path
 
     dXsub = preprocess_raw_video(sample_data_path, dim=36)
-    print('dXsub shape', dXsub.shape)
 
     dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
     dXsub = dXsub[:dXsub_len, :, :, :]
+    # print(dXsub.shape)
+    # raise
+    np.save('parker_normalized',(dXsub[:, :, :, :3]))
+    np.save('parker_raw',(dXsub[:, :, :, -3:]))
+
 
     model = MTTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     model.load_weights(model_checkpoint)
@@ -41,13 +45,28 @@ def predict_vitals(args):
     [b_resp, a_resp] = butter(1, [0.08 / fs * 2, 0.5 / fs * 2], btype='bandpass')
     resp_pred = scipy.signal.filtfilt(b_resp, a_resp, np.double(resp_pred))
 
+    ## Calculating HR
+    N = 30 * fs
+    pulse_fft = np.expand_dims(pulse_pred, 0)
+    f, pxx = scipy.signal.periodogram(pulse_fft, fs=fs, nfft=4 * N, detrend=False)
+    fmask = np.argwhere((f >= 0.75) & (f <= 2.5))  # regular Heart beat are 0.75*60 and 2.5*60
+    frange = np.take(f, fmask)
+    HR = np.take(frange, np.argmax(np.take(pxx, fmask), 0))[0] * 60
+
+    ## Calculating RR
+    resp_fft = np.expand_dims(resp_pred, 0)
+    f, pxx = scipy.signal.periodogram(resp_fft, fs=fs, nfft=4 * N, detrend=False)
+    fmask = np.argwhere((f >= 0.08) & (f <= 0.5))  # regular RR are 0.08*60 and 0.5*60
+    frange = np.take(f, fmask)
+    RR = np.take(frange, np.argmax(np.take(pxx, fmask), 0))[0] * 60
+
     ########## Plot ##################
     plt.subplot(211)
     plt.plot(pulse_pred)
-    plt.title('Pulse Prediction')
+    plt.title('Pulse Prediction - HR: {} BPM'.format(str(HR)))
     plt.subplot(212)
     plt.plot(resp_pred)
-    plt.title('Resp Prediction')
+    plt.title('Resp Prediction - RR: {} BPM'.format(str(RR)))
     plt.show()
 
 
