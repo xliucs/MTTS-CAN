@@ -84,6 +84,8 @@ pip install opencv-python
 
 `xliu0 at cs dot washington dot edu`
 
+Please post your technical questions regarding this repo via Github Issues. 
+
 
 
 
