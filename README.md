@@ -40,6 +40,10 @@ Telehealth and remote health monitoring have become increasingly important durin
 }
 ```
 
+## Demo
+
+**Try out our live demo via link [here](https://vitals.cs.washington.edu/).**
+
 
 ## TVM
 
