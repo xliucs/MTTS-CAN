@@ -13,7 +13,7 @@
 
 ## New Pre-Trained Model (Updated Nov 2021)
 
-Link: <https://drive.google.com/drive/folders/1R4g6EN_LTncSwkRm2CpZb52rY3hba3qs?usp=sharing>
+Working in pregress. Check back later! 
 
 #### Abstract
 
