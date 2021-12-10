@@ -1,5 +1,6 @@
 '''
-Training Script for Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
+Training Script for Multi-Task Temporal Shift Attention Networks for On-Device
+Contactless Vitals Measurement
 Author: Xin Liu, Daniel McDuff
 '''
 # %%
@@ -13,14 +14,20 @@ import os
 import numpy as np
 import scipy.io
 import tensorflow as tf
-
+from tensorflow.python.keras.optimizers import adadelta_v2
 from data_generator import DataGenerator
 from model import HeartBeat, CAN, CAN_3D, Hybrid_CAN, TS_CAN, MTTS_CAN, \
     MT_Hybrid_CAN, MT_CAN_3D, MT_CAN
-from pre_process import get_nframe_video, split_subj, sort_video_list
+from pre_process import get_nframe_video, split_subj, sort_video_list, split_subj_, sort_video_list_, get_nframe_video_, sort_dataFile_list_
 
 np.random.seed(100)  # for reproducibility
-tf.test.is_gpu_available()
+#tf.test.is_gpu_available()
+print("START!")
+tf.config.list_physical_devices('GPU')
+#print("is GPU available")
+#print(tf.test.is_gpu_available())
+print("?")
+print(tf.config.list_physical_devices('GPU'))
 tf.keras.backend.clear_session()
 print(tf.__version__)
 
@@ -41,7 +48,7 @@ parser.add_argument('-c', '--dropout_rate1', type=float, default=0.25,
 parser.add_argument('-d', '--dropout_rate2', type=float, default=0.5,
                     help='dropout rates')
 parser.add_argument('-l', '--lr', type=float, default=1.0,
-                            help='learning rate')
+                    help='learning rate')
 parser.add_argument('-e', '--nb_dense', type=int, default=128,
                     help='number of dense units')
 parser.add_argument('-f', '--cv_split', type=int, default=0,
@@ -59,6 +66,8 @@ parser.add_argument('-save', '--save_all', type=int, default=1,
                     help='save all or not')
 parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
+parser.add_argument('-database', '--database_name', type=str, 
+                    default="COHFACE", help='Which database')                  
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -67,7 +76,10 @@ print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':'))) 
 
 print('Spliting Data...')
 subNum = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 25, 26, 27])
-taskList = list(range(1, args.nb_task+1))
+if args.database_name != "COHFACE":
+    taskList = list(range(1, args.nb_task+1))
+else: 
+    taskList = list(range(0, args.nb_task))
 
 # %% Training
 
@@ -80,14 +92,14 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 
     input_shape = (img_rows, img_cols, 3)
 
-    path_of_video_tr = sort_video_list(args.data_dir, taskList, subTrain)
-    path_of_video_test = sort_video_list(args.data_dir, taskList, subTest)
+    path_of_video_tr = sort_dataFile_list_(args.data_dir, taskList, subTrain, args.database_name, train=True)
+    path_of_video_test = sort_dataFile_list_(args.data_dir, taskList, subTest, args.database_name, train=False)
     path_of_video_tr = list(itertools.chain(*path_of_video_tr))  # Fllaten the list
     path_of_video_test = list(itertools.chain(*path_of_video_test))
 
     print('sample path: ', path_of_video_tr[0])
-    nframe_per_video = get_nframe_video(path_of_video_tr[0])
-    print('Trian Length: ', len(path_of_video_tr))
+    nframe_per_video = get_nframe_video_(path_of_video_tr[0])
+    print('Train Length: ', len(path_of_video_tr))
     print('Test Length: ', len(path_of_video_test))
     print('nframe_per_video', nframe_per_video)
 
@@ -112,6 +124,9 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = args.batch_size * 2
         elif strategy.num_replicas_in_sync == 2:
             args.batch_size = args.batch_size // 2
+        elif strategy.num_replicas_in_sync == 1:
+            print('Using 1 GPU for training!')
+            args.batch_size = 8
         else:
             raise Exception('Only supporting 4 GPUs or 8 GPUs now. Please adjust learning rate in the training script!')
 
@@ -163,7 +178,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         else:
             raise ValueError('Unsupported Model Type!')
 
-        optimizer = tf.keras.optimizers.Adadelta(learning_rate=args.lr)
+        optimizer = adadelta_v2.Adadelta(learning_rate=args.lr)
         if args.temporal == 'MTTS_CAN' or args.temporal == 'MT_Hybrid_CAN' or args.temporal == 'MT_CAN_3D' or \
                 args.temporal == 'MT_CAN':
             losses = {"output_1": "mean_squared_error", "output_2": "mean_squared_error"}
@@ -176,10 +191,12 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         # %% Create data genener
         training_generator = DataGenerator(path_of_video_tr, nframe_per_video, (img_rows, img_cols),
                                            batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                           temporal=args.temporal, respiration=args.respiration)
+                                           temporal=args.temporal, respiration=args.respiration, database_name=args.database_name)
         validation_generator = DataGenerator(path_of_video_test, nframe_per_video, (img_rows, img_cols),
                                              batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                             temporal=args.temporal, respiration=args.respiration)
+                                             temporal=args.temporal, respiration=args.respiration, database_name=args.database_name)
+      
+
         # %%  Checkpoint Folders
         checkpoint_folder = str(os.path.join(args.save_dir, args.exp_name))
         if not os.path.exists(checkpoint_folder):
@@ -198,8 +215,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         hb_callback = HeartBeat(training_generator, validation_generator, args, str(cv_split), checkpoint_folder)
 
         # %% Model Training and Saving Results
-        history = model.fit(x=training_generator, validation_data=validation_generator, epochs=args.nb_epoch, verbose=1,
-                            shuffle=False, callbacks=[csv_logger, save_best_callback, hb_callback], validation_freq=4)
+        history = model.fit(x=training_generator, validation_data=validation_generator, epochs=args.nb_epoch, 
+                    verbose=1, shuffle=False, callbacks=[csv_logger, save_best_callback, hb_callback], validation_freq=4)
 
         val_loss_history = history.history['val_loss']
         val_loss = np.array(val_loss_history)
@@ -239,5 +256,6 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 # %% Training
 
 print('Using Split ', str(args.cv_split))
-subTrain, subTest = split_subj(args.data_dir, args.cv_split, subNum)
+#subTrain, subTest = split_subj(args.data_dir, args.cv_split, subNum)
+subTrain, subTest = split_subj_(args.data_dir, args.database_name)
 train(args, subTrain, subTest, args.cv_split)

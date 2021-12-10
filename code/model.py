@@ -4,7 +4,6 @@ Author: Xin Liu
 '''
 
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.layers import Conv2D, Conv3D, Input, AveragePooling2D, \
     multiply, Dense, Dropout, Flatten, AveragePooling3D
@@ -452,7 +451,7 @@ def MT_Hybrid_CAN(n_frame, nb_filters1, nb_filters2, input_shape_1, input_shape_
 
 
 # %%
-class HeartBeat(keras.callbacks.Callback):
+class HeartBeat(tf.keras.callbacks.Callback):
     def __init__(self, train_gen, test_gen, args, cv_split, save_dir):
         super(HeartBeat, self).__init__()
         self.train_gen = train_gen

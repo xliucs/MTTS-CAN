@@ -3,17 +3,19 @@ Data Generator for Multi-Task Temporal Shift Attention Networks for On-Device Co
 Author: Xin Liu
 '''
 
+import imp
 import math
 
 import h5py
 import numpy as np
-from tensorflow import keras
+from pandas.core.resample import h
+import tensorflow as tf
+from tensorflow.python.keras.utils import data_utils
 
-
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(data_utils.Sequence):
     'Generates data for Keras'
     def __init__(self, paths_of_videos, nframe_per_video, dim, batch_size=32, frame_depth=10,
-                 shuffle=True, temporal=True, respiration=0):
+                 shuffle=True, temporal=True, respiration=0, database_name = None):
         self.dim = dim
         self.batch_size = batch_size
         self.paths_of_videos = paths_of_videos
@@ -22,11 +24,13 @@ class DataGenerator(keras.utils.Sequence):
         self.temporal = temporal
         self.frame_depth = frame_depth
         self.respiration = respiration
+        self.database_name = database_name
         self.on_epoch_end()
 
-    def __len__(self):
+    def __len__(self): 
         'Denotes the number of batches per epoch'
-        return math.ceil(len(self.paths_of_videos) / self.batch_size)
+        temp_var = math.ceil(len(self.paths_of_videos) / self.batch_size)
+        return temp_var
 
     def __getitem__(self, index):
         'Generate one batch of data'
@@ -43,7 +47,6 @@ class DataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
-
         if self.respiration == 1:
             label_key = "drsub"
         else:
@@ -125,6 +128,7 @@ class DataGenerator(keras.utils.Sequence):
             num_window = int(self.nframe_per_video / self.frame_depth) * len(list_video_temp)
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
+                
                 dXsub = np.transpose(np.array(f1["dXsub"])) #dRsub for respiration
                 dysub = np.array(f1[label_key])
                 data[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :, :, :] = dXsub
@@ -138,21 +142,33 @@ class DataGenerator(keras.utils.Sequence):
                                                          apperance_data.shape[2], apperance_data.shape[3],
                                                          apperance_data.shape[4]))
             output = (motion_data, apperance_data)
+
+
         elif self.temporal == 'MTTS_CAN':
-            data = np.zeros((self.nframe_per_video * len(list_video_temp), self.dim[0], self.dim[1], 6), dtype=np.float32)
-            label_y = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
-            label_r = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
-            num_window = int(self.nframe_per_video / self.frame_depth) * len(list_video_temp)
+            sum_frames_batch = get_frame_sum(list_video_temp)
+            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32) #(self.nframe_per_video * len(list_video_temp)
+            label_y = np.zeros((sum_frames_batch, 1), dtype=np.float32) #(self.nframe_per_video * len(list_video_temp)
+            label_r = np.zeros((sum_frames_batch, 1), dtype=np.float32) #self.nframe_per_video * len(list_video_temp)
+            num_window3 = int(self.nframe_per_video / self.frame_depth) * len(list_video_temp)
+            num_window = int(sum_frames_batch/ self.frame_depth)
+            index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"])) #dRsub for respiration
-                drsub = np.array(f1['drsub'])
-                dysub = np.array(f1['dysub'])
-                data[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :, :, :] = dXsub
-                label_y[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :] = dysub
-                label_r[index * self.nframe_per_video:(index + 1) * self.nframe_per_video, :] = drsub
+                dXsub = np.array(f1['data'])
+                drsub = np.array(f1['respiration'])
+                dysub = np.array(f1['pulse'])
+                current_nframe = dXsub.shape[0]
+                data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
+                label_y[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
+                label_r[index_counter:index_counter+current_nframe, 0] = drsub # data Respiration
+                index_counter += current_nframe
             motion_data = data[:, :, :, :3]
             apperance_data = data[:, :, :, -3:]
+            max_data = num_window*self.frame_depth
+            motion_data = motion_data[0:max_data, :, :, :]
+            apperance_data = apperance_data[0:max_data, :, :, :]
+            label_y = label_y[0:max_data, 0]
+            label_r = label_r[0:max_data, 0]
             apperance_data = np.reshape(apperance_data, (num_window, self.frame_depth, self.dim[0], self.dim[1], 3))
             apperance_data = np.average(apperance_data, axis=1)
             apperance_data = np.repeat(apperance_data[:, np.newaxis, :, :, :], self.frame_depth, axis=1)
@@ -214,3 +230,17 @@ class DataGenerator(keras.utils.Sequence):
             raise ValueError('Unsupported Model!')
 
         return output, label
+
+def find_csv(video_path):
+    csv_path = str(video_path).replace("vid", "bvp").replace(".avi", ".csv")
+    return csv_path
+
+def get_frame_sum(list_vid):
+    frames_sum = 0
+    counter = 0
+    for vid in list_vid:
+        hf = h5py.File(vid, 'r')
+        shape = hf['data'].shape
+        frames_sum += shape[0]
+        counter += 1
+    return frames_sum

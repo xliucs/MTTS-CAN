@@ -1,3 +1,4 @@
+from importlib import import_module
 import numpy as np
 import cv2
 from skimage.util import img_as_float
@@ -14,6 +15,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     t = []
     i = 0
     vidObj = cv2.VideoCapture(videoFilePath);
+    
     totalFrames = int(vidObj.get(cv2.CAP_PROP_FRAME_COUNT)) # get total frame size
     Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)
     height = vidObj.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -22,24 +24,28 @@ def preprocess_raw_video(videoFilePath, dim=36):
     dims = img.shape
     print("Orignal Height", height)
     print("Original width", width)
+    
     #########################################################################
     # Crop each frame size into dim x dim
     while success:
         t.append(vidObj.get(cv2.CAP_PROP_POS_MSEC))# current timestamp in milisecond
-        vidLxL = cv2.resize(img_as_float(img[:, int(width/2)-int(height/2 + 1):int(height/2)+int(width/2), :]), (dim, dim), interpolation = cv2.INTER_AREA)
-        vidLxL = cv2.rotate(vidLxL, cv2.ROTATE_90_CLOCKWISE) # rotate 90 degree
+        vidLxL = cv2.resize(img_as_float(img), (dim, dim), interpolation = cv2.INTER_AREA) #img[:, int(width/2)-int(height/2 + 1): int(height/2)+int(width/2), :])
+        #vidLxL = cv2.rotate(vidLxL, cv2.ROTATE_90_CLOCKWISE) # rotate 90 degree
         vidLxL = cv2.cvtColor(vidLxL.astype('float32'), cv2.COLOR_BGR2RGB)
         vidLxL[vidLxL > 1] = 1
         vidLxL[vidLxL < (1/255)] = 1/255
         Xsub[i, :, :, :] = vidLxL
         success, img = vidObj.read() # read the next one
         i = i + 1
-    plt.imshow(Xsub[0])
-    plt.title('Sample Preprocessed Frame')
-    plt.show()
+    #plt.imshow(Xsub[0])
+    #plt.title('Sample Preprocessed Frame')
+    #plt.show()
     #########################################################################
     # Normalized Frames in the motion branch
     normalized_len = len(t) - 1
+
+    #print("normalized Len")
+    #print(normalized_len)
     dXsub = np.zeros((normalized_len, dim, dim, 3), dtype = np.float32)
     for j in range(normalized_len - 1):
         dXsub[j, :, :, :] = (Xsub[j+1, :, :, :] - Xsub[j, :, :, :]) / (Xsub[j+1, :, :, :] + Xsub[j, :, :, :])
@@ -48,7 +54,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     # Normalize raw frames in the apperance branch
     Xsub = Xsub - np.mean(Xsub)
     Xsub = Xsub  / np.std(Xsub)
-    Xsub = Xsub[:totalFrames-1, :, :, :]
+    Xsub = Xsub[:totalFrames-1, :, :, :] # -1
     #########################################################################
     # Plot an example of data after preprocess
     dXsub = np.concatenate((dXsub, Xsub), axis = 3);
