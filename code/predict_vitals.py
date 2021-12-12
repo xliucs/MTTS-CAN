@@ -15,7 +15,8 @@ def predict_vitals(args):
     img_rows = 36
     img_cols = 36
     frame_depth = 10
-    model_checkpoint = './mtts_can.hdf5'
+    #model_checkpoint = './mtts_can.hdf5'
+    model_checkpoint = './rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
     batch_size = args.batch_size
     fs = args.sampling_rate
     sample_data_path = args.video_path
@@ -36,19 +37,12 @@ def predict_vitals(args):
     [b_pulse, a_pulse] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_pred = scipy.signal.filtfilt(b_pulse, a_pulse, np.double(pulse_pred))
 
-    resp_pred = yptest[1]
-    resp_pred = detrend(np.cumsum(resp_pred), 100)
-    [b_resp, a_resp] = butter(1, [0.08 / fs * 2, 0.5 / fs * 2], btype='bandpass')
-    resp_pred = scipy.signal.filtfilt(b_resp, a_resp, np.double(resp_pred))
-
+    
     ########## Plot ##################
     plt.subplot(211)
     plt.plot(pulse_pred)
     plt.title('Pulse Prediction')
     plt.subplot(212)
-    plt.plot(resp_pred)
-    plt.title('Resp Prediction')
-    plt.show()
 
 
 if __name__ == "__main__":

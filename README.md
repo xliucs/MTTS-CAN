@@ -66,7 +66,7 @@ python code/train.py --exp_name test1 --data_dir E:/Databases --temporal MTTS_CA
 
 `python code/predict_vitals.py --video_path [VIDEO_PATH]`
 python code/predict_vitals.py --video_path E:\Databases\Validation\UBFC-Phys\s28\s28\vid_s28_T1.avi
-python code/predict_vitals.py --video_path E:\Databases\COHFACE\cohface\1\1\data.avi
+python code/predict_vitals.py --video_path E:\Databases\Training\COHFACE\4\1\data.avi --sampling_rate 20
 
 The default video sampling rate is 30Hz.
 

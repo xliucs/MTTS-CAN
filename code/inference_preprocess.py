@@ -14,7 +14,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     # set up
     t = []
     i = 0
-    vidObj = cv2.VideoCapture(videoFilePath);
+    vidObj = cv2.VideoCapture(videoFilePath)
     
     totalFrames = int(vidObj.get(cv2.CAP_PROP_FRAME_COUNT)) # get total frame size
     Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)

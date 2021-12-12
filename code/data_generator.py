@@ -123,18 +123,25 @@ class DataGenerator(data_utils.Sequence):
             output = (data[:, :, :, :3], data[:, :, :, -3:])
             label = (label_y, label_r)
         elif self.temporal == 'TS_CAN':
-            data = np.zeros((self.nframe_per_video * len(list_video_temp), self.dim[0], self.dim[1], 6), dtype=np.float32)
-            label = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
-            num_window = int(self.nframe_per_video / self.frame_depth) * len(list_video_temp)
+            sum_frames_batch = get_frame_sum(list_video_temp)
+            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
+            label = np.zeros((sum_frames_batch, 1), dtype=np.float32)
+            num_window = int(sum_frames_batch/ self.frame_depth)
+            index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
-                
-                dXsub = np.transpose(np.array(f1["dXsub"])) #dRsub for respiration
-                dysub = np.array(f1[label_key])
-                data[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :, :, :] = dXsub
-                label[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :] = dysub
+                dXsub = np.array(f1['data'])
+                dysub = np.array(f1['pulse'])
+                current_nframe = dXsub.shape[0]
+                data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
+                label[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
+                index_counter += current_nframe
             motion_data = data[:, :, :, :3]
             apperance_data = data[:, :, :, -3:]
+            max_data = num_window*self.frame_depth
+            motion_data = motion_data[0:max_data, :, :, :]
+            apperance_data = apperance_data[0:max_data, :, :, :]
+            label = label[0:max_data, 0]
             apperance_data = np.reshape(apperance_data, (num_window, self.frame_depth, self.dim[0], self.dim[1], 3))
             apperance_data = np.average(apperance_data, axis=1)
             apperance_data = np.repeat(apperance_data[:, np.newaxis, :, :, :], self.frame_depth, axis=1)
@@ -142,14 +149,11 @@ class DataGenerator(data_utils.Sequence):
                                                          apperance_data.shape[2], apperance_data.shape[3],
                                                          apperance_data.shape[4]))
             output = (motion_data, apperance_data)
-
-
         elif self.temporal == 'MTTS_CAN':
             sum_frames_batch = get_frame_sum(list_video_temp)
-            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32) #(self.nframe_per_video * len(list_video_temp)
-            label_y = np.zeros((sum_frames_batch, 1), dtype=np.float32) #(self.nframe_per_video * len(list_video_temp)
-            label_r = np.zeros((sum_frames_batch, 1), dtype=np.float32) #self.nframe_per_video * len(list_video_temp)
-            num_window3 = int(self.nframe_per_video / self.frame_depth) * len(list_video_temp)
+            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
+            label_y = np.zeros((sum_frames_batch, 1), dtype=np.float32)
+            label_r = np.zeros((sum_frames_batch, 1), dtype=np.float32)
             num_window = int(sum_frames_batch/ self.frame_depth)
             index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
