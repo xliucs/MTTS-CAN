@@ -61,7 +61,6 @@ def TSM_Cov2D(x, n_frame, nb_filters=128, kernel_size=(3, 3), activation='tanh',
 
 
 # %%
-
 # DEEPPHYS????
 def CAN(nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), dropout_rate1=0.25, dropout_rate2=0.5,
         pool_size=(2, 2), nb_dense=128):

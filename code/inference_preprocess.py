@@ -17,13 +17,15 @@ def preprocess_raw_video(videoFilePath, dim=36):
     vidObj = cv2.VideoCapture(videoFilePath)
     
     totalFrames = int(vidObj.get(cv2.CAP_PROP_FRAME_COUNT)) # get total frame size
+    fps = int(vidObj.get(cv2.CAP_PROP_FPS))
+    print("fps:   ", fps)
     Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)
     height = vidObj.get(cv2.CAP_PROP_FRAME_HEIGHT)
     width = vidObj.get(cv2.CAP_PROP_FRAME_WIDTH)
     success, img = vidObj.read()
     dims = img.shape
-    print("Orignal Height", height)
-    print("Original width", width)
+    #print("Orignal Height", height)
+    #print("Original width", width)
     
     #########################################################################
     # Crop each frame size into dim x dim
@@ -57,8 +59,8 @@ def preprocess_raw_video(videoFilePath, dim=36):
     Xsub = Xsub[:totalFrames-1, :, :, :] # -1
     #########################################################################
     # Plot an example of data after preprocess
-    dXsub = np.concatenate((dXsub, Xsub), axis = 3);
-    return dXsub
+    dXsub = np.concatenate((dXsub, Xsub), axis = 3)
+    return dXsub, fps
 
 def detrend(signal, Lambda):
     """detrend(signal, Lambda) -> filtered_signal

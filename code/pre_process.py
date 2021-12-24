@@ -1,6 +1,5 @@
 import glob
 import os
-import cv2
 
 import h5py
 import numpy as np
@@ -18,7 +17,6 @@ def get_nframe_video_(path):
     temp_f1 = h5py.File(path, 'r')
     temp_data = np.array(temp_f1["data"])
     nframe_per_video = temp_data.shape[0]
-    #nframe_per_video = int(cv2.VideoCapture(path).get(cv2.CAP_PROP_FRAME_COUNT))
     return nframe_per_video
 
 
@@ -131,11 +129,11 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
 
 def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
     if database == "UBFC_PHYS":
-        subTrain = np.array(range(1,37)).tolist()
-        subTest = np.array(range(36,38)).tolist()
+        subTrain = np.array(range(1, 14)).tolist() #,37)).tolist()
+        subTest = np.array(range(36,56)).tolist()
     elif database == "COHFACE":
-        subTrain = np.array(range(1, 33)).tolist()
-        subTest = np.array(range(35, 41)).tolist()
+        subTrain = np.array(range(1, 14)).tolist()# 33)).tolist()
+        subTest = np.array(range(34,38)).tolist() # 41)).tolist()
     else:
-        print("This Database isn´t implemented yet.")
+        print("This Database isn't implemented yet.")
     return subTrain, subTest

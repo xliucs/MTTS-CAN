@@ -14,7 +14,7 @@ def build_h5py_COHFACE(vid):
         os.remove(str(vid).replace(".avi", "_vid.hdf5"))
         print("deleted")
         
-    dXsub = preprocess_raw_video(vid, 36)
+    dXsub, fps = preprocess_raw_video(vid, 36)
     print(dXsub.shape)
     nframesPerVideo = dXsub.shape[0]
 

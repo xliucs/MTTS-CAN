@@ -21,13 +21,8 @@ from model import HeartBeat, CAN, CAN_3D, Hybrid_CAN, TS_CAN, MTTS_CAN, \
 from pre_process import get_nframe_video, split_subj, sort_video_list, split_subj_, sort_video_list_, get_nframe_video_, sort_dataFile_list_
 
 np.random.seed(100)  # for reproducibility
-#tf.test.is_gpu_available()
 print("START!")
 tf.config.list_physical_devices('GPU')
-#print("is GPU available")
-#print(tf.test.is_gpu_available())
-print("?")
-print(tf.config.list_physical_devices('GPU'))
 tf.keras.backend.clear_session()
 print(tf.__version__)
 
@@ -126,7 +121,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = args.batch_size // 2
         elif strategy.num_replicas_in_sync == 1:
             print('Using 1 GPU for training!')
-            args.batch_size = 8
+            args.batch_size = 4
         else:
             raise Exception('Only supporting 4 GPUs or 8 GPUs now. Please adjust learning rate in the training script!')
 
@@ -256,6 +251,5 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 # %% Training
 
 print('Using Split ', str(args.cv_split))
-#subTrain, subTest = split_subj(args.data_dir, args.cv_split, subNum)
 subTrain, subTest = split_subj_(args.data_dir, args.database_name)
 train(args, subTrain, subTest, args.cv_split)

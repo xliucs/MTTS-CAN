@@ -53,75 +53,54 @@ class DataGenerator(data_utils.Sequence):
             label_key = 'dysub'
 
         if self.temporal == 'CAN_3D':
-            num_window = self.nframe_per_video - (self.frame_depth + 1)
-            data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
-                            dtype=np.float32)
-            label = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
+            sum_frames_batch = get_frame_sum(list_video_temp)
+            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1],self.frame_depth,  6), dtype=np.float32)
+            label = np.zeros((sum_frames_batch, self.frame_depth), dtype=np.float32)
+            num_window = int(sum_frames_batch/ self.frame_depth)
+            index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"]))
-                dysub = np.array(f1[label_key])
-                tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
+                dXsub = np.array(f1['data'])
+                dysub = np.array(f1['pulse'])
+                tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
-                tempY = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
+                tempY = np.array([dysub[f:f + self.frame_depth] #(491,10,1) - (169, 10, 1)
                                   for f in range(num_window)])
                 tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
                 tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
                 tempY = np.reshape(tempY, (num_window, self.frame_depth)) # (169, 10)
-                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX
+                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX # altes
                 label[index*num_window:(index+1)*num_window, :] = tempY
-            output = (data[:, :, :, :, :3], data[:, :, :, :, -3:])
-        elif self.temporal == 'MT_CAN_3D':
-            num_window = self.nframe_per_video - (self.frame_depth + 1)
-            data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
-                            dtype=np.float32)
-            label_y = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
-            label_r = np.zeros((num_window * len(list_video_temp), self.frame_depth), dtype=np.float32)
-            for index, temp_path in enumerate(list_video_temp):
-                f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"]))
-                drsub = np.array(f1['drsub'])
-                dysub = np.array(f1['dysub'])
-                tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
-                                  for f in range(num_window)])
-                tempY_y = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
-                                  for f in range(num_window)])
-                tempY_r = np.array([drsub[f:f + self.frame_depth] # (169, 10, 1)
-                                  for f in range(num_window)])
-                tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
-                tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
-                tempY_y = np.reshape(tempY_y, (num_window, self.frame_depth)) # (169, 10)
-                tempY_r = np.reshape(tempY_r, (num_window, self.frame_depth))  # (169, 10)
-                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX
-                label_y[index*num_window:(index+1)*num_window, :] = tempY_y
-                label_r[index * num_window:(index + 1) * num_window, :] = tempY_r
-            output = (data[:, :, :, :, :3], data[:, :, :, :, -3:])
-            label = (label_y, label_r)
+
+            motion_data = data[:, :, :, :, :3]
+            apperance_data = data[:, :, :, :, -3:]
+            max_data = num_window*self.frame_depth
+            motion_data = motion_data[0:max_data, :, :, :]
+            apperance_data = apperance_data[0:max_data, :, :, :]
+            label = label[0:max_data, :]
+            output = (motion_data, apperance_data)
+        
         elif self.temporal == 'CAN':
-            data = np.zeros((self.nframe_per_video * len(list_video_temp), self.dim[0], self.dim[1], 6), dtype=np.float32)
-            label = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
+            sum_frames_batch = get_frame_sum(list_video_temp)
+            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
+            label = np.zeros((sum_frames_batch, 1), dtype=np.float32)
+            num_window = int(sum_frames_batch/ self.frame_depth)
+            index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"])) #dRsub for respiration
-                dysub = np.array(f1[label_key])
-                data[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :, :, :] = dXsub
-                label[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :] = dysub
-            output = (data[:, :, :, :3], data[:, :, :, -3:])
-        elif self.temporal == 'MT_CAN':
-            data = np.zeros((self.nframe_per_video * len(list_video_temp), self.dim[0], self.dim[1], 6),
-                            dtype=np.float32)
-            label_y = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
-            label_r = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
-            for index, temp_path in enumerate(list_video_temp):
-                f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"]))  # dRsub for respiration
-                drsub = np.array(f1['drsub'])
-                dysub = np.array(f1['dysub'])
-                data[index * self.nframe_per_video:(index + 1) * self.nframe_per_video, :, :, :] = dXsub
-                label_y[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :] = dysub
-                label_r[index * self.nframe_per_video:(index + 1) * self.nframe_per_video, :] = drsub
-            output = (data[:, :, :, :3], data[:, :, :, -3:])
-            label = (label_y, label_r)
+                dXsub = np.array(f1['data'])
+                dysub = np.array(f1['pulse'])
+                current_nframe = dXsub.shape[0]
+                data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
+                label[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
+                index_counter += current_nframe
+            motion_data = data[:, :, :, :3]
+            apperance_data = data[:, :, :, -3:]
+            max_data = num_window*self.frame_depth
+            motion_data = motion_data[0:max_data, :, :, :]
+            apperance_data = apperance_data[0:max_data, :, :, :]
+            label = label[0:max_data, 0]
+            output = (motion_data, apperance_data)
         elif self.temporal == 'TS_CAN':
             sum_frames_batch = get_frame_sum(list_video_temp)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
@@ -149,6 +128,71 @@ class DataGenerator(data_utils.Sequence):
                                                          apperance_data.shape[2], apperance_data.shape[3],
                                                          apperance_data.shape[4]))
             output = (motion_data, apperance_data)
+
+        elif self.temporal == 'Hybrid_CAN':
+            num_window = self.nframe_per_video - (self.frame_depth + 1)
+            data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
+                            dtype=np.float32)
+            label = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
+            for index, temp_path in enumerate(list_video_temp):
+                f1 = h5py.File(temp_path, 'r')
+                dXsub = np.transpose(np.array(f1["dXsub"]))
+                dysub = np.array(f1[label_key])
+                tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
+                                  for f in range(num_window)])
+                tempY = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
+                                  for f in range(num_window)])
+                tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
+                tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
+                tempY = np.reshape(tempY, (num_window, self.frame_depth)) # (169, 10)
+                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX
+                label[index*num_window:(index+1)*num_window, :] = tempY
+            motion_data = data[:, :, :, :, :3]
+            apperance_data = np.average(data[:, :, :, :, -3:], axis=-2)
+            output = (motion_data, apperance_data)
+
+        # Multi-Task Approaches with Respiration rate 
+        elif self.temporal == 'MT_CAN':
+            data = np.zeros((self.nframe_per_video * len(list_video_temp), self.dim[0], self.dim[1], 6),
+                            dtype=np.float32)
+            label_y = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
+            label_r = np.zeros((self.nframe_per_video * len(list_video_temp), 1), dtype=np.float32)
+            for index, temp_path in enumerate(list_video_temp):
+                f1 = h5py.File(temp_path, 'r')
+                dXsub = np.transpose(np.array(f1["dXsub"]))  # dRsub for respiration
+                drsub = np.array(f1['drsub'])
+                dysub = np.array(f1['dysub'])
+                data[index * self.nframe_per_video:(index + 1) * self.nframe_per_video, :, :, :] = dXsub
+                label_y[index*self.nframe_per_video:(index+1)*self.nframe_per_video, :] = dysub
+                label_r[index * self.nframe_per_video:(index + 1) * self.nframe_per_video, :] = drsub
+            output = (data[:, :, :, :3], data[:, :, :, -3:])
+            label = (label_y, label_r)
+        elif self.temporal == 'MT_CAN_3D':
+            num_window = self.nframe_per_video - (self.frame_depth + 1)
+            data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
+                            dtype=np.float32)
+            label_y = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
+            label_r = np.zeros((num_window * len(list_video_temp), self.frame_depth), dtype=np.float32)
+            for index, temp_path in enumerate(list_video_temp):
+                f1 = h5py.File(temp_path, 'r')
+                dXsub = np.transpose(np.array(f1["dXsub"]))
+                drsub = np.array(f1['drsub'])
+                dysub = np.array(f1['dysub'])
+                tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
+                                  for f in range(num_window)])
+                tempY_y = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
+                                  for f in range(num_window)])
+                tempY_r = np.array([drsub[f:f + self.frame_depth] # (169, 10, 1)
+                                  for f in range(num_window)])
+                tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
+                tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
+                tempY_y = np.reshape(tempY_y, (num_window, self.frame_depth)) # (169, 10)
+                tempY_r = np.reshape(tempY_r, (num_window, self.frame_depth))  # (169, 10)
+                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX
+                label_y[index*num_window:(index+1)*num_window, :] = tempY_y
+                label_r[index * num_window:(index + 1) * num_window, :] = tempY_r
+            output = (data[:, :, :, :, :3], data[:, :, :, :, -3:])
+            label = (label_y, label_r)
         elif self.temporal == 'MTTS_CAN':
             sum_frames_batch = get_frame_sum(list_video_temp)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
@@ -209,27 +253,6 @@ class DataGenerator(data_utils.Sequence):
             apperance_data = np.average(data[:, :, :, :, -3:], axis=-2)
             output = (motion_data, apperance_data)
             label = (label_y, label_r)
-        elif self.temporal == 'Hybrid_CAN':
-            num_window = self.nframe_per_video - (self.frame_depth + 1)
-            data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
-                            dtype=np.float32)
-            label = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
-            for index, temp_path in enumerate(list_video_temp):
-                f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"]))
-                dysub = np.array(f1[label_key])
-                tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
-                                  for f in range(num_window)])
-                tempY = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
-                                  for f in range(num_window)])
-                tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
-                tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
-                tempY = np.reshape(tempY, (num_window, self.frame_depth)) # (169, 10)
-                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX
-                label[index*num_window:(index+1)*num_window, :] = tempY
-            motion_data = data[:, :, :, :, :3]
-            apperance_data = np.average(data[:, :, :, :, -3:], axis=-2)
-            output = (motion_data, apperance_data)
         else:
             raise ValueError('Unsupported Model!')
 
