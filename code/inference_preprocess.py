@@ -52,11 +52,12 @@ def preprocess_raw_video(videoFilePath, dim=36):
     for j in range(normalized_len - 1):
         dXsub[j, :, :, :] = (Xsub[j+1, :, :, :] - Xsub[j, :, :, :]) / (Xsub[j+1, :, :, :] + Xsub[j, :, :, :])
     dXsub = dXsub / np.std(dXsub)
+   
     #########################################################################
     # Normalize raw frames in the apperance branch
     Xsub = Xsub - np.mean(Xsub)
     Xsub = Xsub  / np.std(Xsub)
-    Xsub = Xsub[:totalFrames-1, :, :, :] # -1
+    Xsub = Xsub[:dXsub.shape[0], :, :, :] # -1
     #########################################################################
     # Plot an example of data after preprocess
     dXsub = np.concatenate((dXsub, Xsub), axis = 3)

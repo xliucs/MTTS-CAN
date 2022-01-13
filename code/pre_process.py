@@ -63,13 +63,13 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
             for p in subTrain:
                 x = glob.glob(os.path.join(data_dir, 'Training/UBFC-PHYS/s' + str(p), 'vid_s*'))
                 x = sorted(x)
-                x = sorted(x, key=take_last_ele)
+                #x = sorted(x, key=take_last_ele)
                 final.append(x)
         else:
            for p in subTrain:
                 x = glob.glob(os.path.join(data_dir, 'Validation/UBFC-PHYS/s' + str(p), 'vid_s*'))
                 x = sorted(x)
-                x = sorted(x, key=take_last_ele)
+                #x = sorted(x, key=take_last_ele)
                 final.append(x)
 
     elif database_name == "COHFACE":
@@ -129,11 +129,11 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
 
 def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
     if database == "UBFC_PHYS":
-        subTrain = np.array(range(1, 14)).tolist() #,37)).tolist()
-        subTest = np.array(range(36,56)).tolist()
+        subTrain = np.array(range(1, 37)).tolist() #,37)).tolist()
+        subTest = np.array(range(37,57)).tolist()
     elif database == "COHFACE":
-        subTrain = np.array(range(1, 14)).tolist()# 33)).tolist()
-        subTest = np.array(range(34,38)).tolist() # 41)).tolist()
+        subTrain = np.array(range(1, 33)).tolist()# 33)).tolist()
+        subTest = np.array(range(32,41)).tolist() # 41)).tolist()
     else:
         print("This Database isn't implemented yet.")
     return subTrain, subTest

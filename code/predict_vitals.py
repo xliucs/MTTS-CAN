@@ -104,6 +104,6 @@ if __name__ == "__main__":
     predict_vitals(args)
 
 
-#python code/predict_vitals.py --video_path E:\Databases\Training\COHFACE\4\1\data.avi
+#python code/predict_vitals.py --video_path E:\Databases\Training\COHFACE\4\1\data.avi --trained_model ./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
