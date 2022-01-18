@@ -96,32 +96,37 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
     if database_name == "UBFC_PHYS":
         if train:
             for p in subTrain:
-                x = glob.glob(os.path.join(data_dir, 'Training/UBFC-PHYS/s' + str(p), 'vid_s*'))
+                x = glob.glob(os.path.join(data_dir, '1)Training/UBFC-PHYS/s' + str(p), "s" + str(p) + "*"))
                 x = sorted(x)
-                x = sorted(x, key=take_last_ele)
+                #x = sorted(x, key=take_last_ele)
                 final.append(x)
         else:
            for p in subTrain:
-                x = glob.glob(os.path.join(data_dir, 'Validation/UBFC-PHYS/s' + str(p), 'vid_s*'))
+                x = glob.glob(os.path.join(data_dir, '2)Validation/UBFC-PHYS/s' + str(p), "s" + str(p) + "*"))
                 x = sorted(x)
-                x = sorted(x, key=take_last_ele)
+                #x = sorted(x, key=take_last_ele)
                 final.append(x)
 
     elif database_name == "COHFACE":
         if train:
             for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, 'Training/COHFACE/', str(p), str(t), 'data_vid*'))
+                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE/', str(p), str(t), 'data_datafile*'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
         else:
              for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, 'Validation/COHFACE/', str(p), str(t), 'data_vid*'))
+                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), 'data_datafile*'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
+    elif database_name == "MIX":
+        for database in subTrain.keys():
+            x = glob.glob(os.path.join(database, "**","*datafile.hdf5"),recursive=True)
+            final.append(x)
+        
     else: 
         print("not implemented yet.")
     return final
@@ -136,4 +141,21 @@ def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
         subTest = np.array(range(32,41)).tolist() # 41)).tolist()
     else:
         print("This Database isn't implemented yet.")
+    return subTrain, subTest
+
+def collect_subj(data_dir): # collecting all subject out of data_dir..
+    
+    path_tr = os.path.join(data_dir, "1)Training")
+    path_val = os.path.join(data_dir, "2)Validation")
+    databases_tr =glob.glob(os.path.join(path_tr, "*"))
+    databases_val =glob.glob(os.path.join(path_val, "*"))
+    subTrain = {}
+    subTest = {}
+    for database in databases_tr:
+        subj_tr = os.listdir(database)
+        subTrain[database] = subj_tr
+    for database in databases_val:
+        subj_val = os.listdir(database)
+        subTest[database] = subj_val
+
     return subTrain, subTest

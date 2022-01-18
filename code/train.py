@@ -18,7 +18,7 @@ from tensorflow.python.keras.optimizers import adadelta_v2
 from data_generator import DataGenerator
 from model import HeartBeat, CAN, CAN_3D, Hybrid_CAN, TS_CAN, MTTS_CAN, \
     MT_Hybrid_CAN, MT_CAN_3D, MT_CAN
-from pre_process import get_nframe_video, split_subj, sort_video_list, split_subj_, sort_video_list_, get_nframe_video_, sort_dataFile_list_
+from pre_process import get_nframe_video, split_subj, sort_video_list, split_subj_, sort_video_list_, get_nframe_video_, sort_dataFile_list_, collect_subj
 
 np.random.seed(100)  # for reproducibility
 print("START!")
@@ -245,11 +245,27 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         scipy.io.savemat(checkpoint_folder + '/yptest_best_' + '_cv' + str(cv_split) + '.mat',
                          mdict={'yptest': yptest})
 
+        file = open(checkpoint_folder + "/log.txt","w")
+        file.write("LogFile\n\n")
+        file.write("Name:  "), file.write(args.exp_name)
+        file.write("\nModel:   "), file.write(args.temporal)
+        file.write("\nBatch Size:   "), file.write(args.batch_size)
+        file.write("\nLearningrate:   "), file.write(args.lr)
+        file.write("\nTrain Subjects:  "), file.write(subTrain)
+        file.write("\nValidation Subjects:  "), file.write(subTest)
+        file.close()
+
         print('Finish saving the results from the last epoch')
 
 
 # %% Training
 
 print('Using Split ', str(args.cv_split))
-subTrain, subTest = split_subj_(args.data_dir, args.database_name)
+if args.database_name != "MIX":
+    subTrain, subTest = split_subj_(args.data_dir, args.database_name)
+else:
+    subTrain, subTest = collect_subj(args.data_dir)
+
 train(args, subTrain, subTest, args.cv_split)
+
+

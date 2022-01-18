@@ -60,7 +60,7 @@ If you want to use TVM, pleaea follow [this tutorial](https://tvm.apache.org/doc
 `python code/train.py --exp_name test --exp_name [e.g., test] --data_dir [DATASET_PATH] --temporal [e.g., MMTS_CAN]`
 python code/train.py --exp_name test1 --data_dir E:/Databases/test --temporal MTTS_CAN
 python code/train.py --exp_name test1 --data_dir E:/Databases/Training/UBFC-PHYS --temporal MTTS_CAN
-python code/train.py --exp_name test1 --data_dir E:/Databases --temporal MTTS_CAN --nb_task 4
+python code/train.py --exp_name testCohFace2 --data_dir E:/Databases --temporal CAN_3D --nb_task 4
 
 ## Inference
 
