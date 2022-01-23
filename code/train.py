@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser()
 # data I/O
 parser.add_argument('-exp', '--exp_name', type=str,
                     help='experiment name')
-parser.add_argument('-i', '--data_dir', type=str, help='/mnt/share/StudiShare/sarah/Databases/')
+parser.add_argument('-i', '--data_dir', type=str, help='Location for the dataset')
 parser.add_argument('-o', '--save_dir', type=str, default='/home/quehl/Results/',
                     help='Location for parameter checkpoints and samples')
 parser.add_argument('-a', '--nb_filters1', type=int, default=32,
