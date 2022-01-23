@@ -59,7 +59,7 @@ def find_csv(video_path):
     plt.show()
 
     
-    
+    nframe_per_video = 1304
 
     #f4 = f2["time"]
     #print(f2.keys())

@@ -62,6 +62,12 @@ python code/train.py --exp_name test1 --data_dir E:/Databases/test --temporal MT
 python code/train.py --exp_name test1 --data_dir E:/Databases/Training/UBFC-PHYS --temporal MTTS_CAN
 python code/train.py --exp_name testCohFace2 --data_dir E:/Databases --temporal CAN_3D --nb_task 4
 
+python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN --database_name MIX
+
+
+python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN
+
+
 ## Inference
 
 `python code/predict_vitals.py --video_path [VIDEO_PATH]`

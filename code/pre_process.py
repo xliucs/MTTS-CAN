@@ -92,6 +92,7 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
     return final
 
 def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
+    print("SORT DatafileList")
     final = []
     if database_name == "UBFC_PHYS":
         if train:

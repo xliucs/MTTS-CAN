@@ -2,8 +2,14 @@ code/__pycache__/*
 
 rPPG-checkpoints
 rPPG-checkpoints/*
-test.py
 .vscode
 .vscode/*
 .vs
 .vs/*
+0.png
+1.png
+log.txt
+.gitignore
+picture1.jpg
+picture.jpg
+picture2.jpg
