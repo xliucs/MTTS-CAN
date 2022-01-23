@@ -85,11 +85,11 @@ During the inference, the program will generate a sample pre-processed frame. Pl
 
 
 Tensorflow 2.0+
-
+tested with Tensorflow-gpu=2.3
 
 `conda create -n tf-gpu tensorflow-gpu cudatoolkit=10.1` -- this command takes care of both CUDA and TF environments.
 
-`pip install opencv-python scipy numpy matplotlib`
+`pip install opencv-python scipy numpy matplotlib hrv-analysis`
 
 If`pip install opencv-python` does not work, I found these commands always work on my mac.
 

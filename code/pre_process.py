@@ -92,7 +92,6 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
     return final
 
 def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
-    print("SORT DatafileList")
     final = []
     if database_name == "UBFC_PHYS":
         if train:
@@ -112,14 +111,14 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
         if train:
             for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE/', str(p), str(t), 'data_datafile*'))
+                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE/', str(p), str(t), 'data_datafile.hdf5'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
         else:
              for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), 'data_datafile*'))
+                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), 'data_datafile.hdf5'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
