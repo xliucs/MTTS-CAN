@@ -91,14 +91,12 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     path_of_video_test = sort_dataFile_list_(args.data_dir, taskList, subTest, args.database_name, train=False)
     path_of_video_tr = list(itertools.chain(*path_of_video_tr))  # Fllaten the list
     path_of_video_test = list(itertools.chain(*path_of_video_test))
-    print("Train: ", path_of_video_tr)
-    print("Test: ",path_of_video_test)
 
     print('sample path: ', path_of_video_tr[0])
     nframe_per_video = get_nframe_video_(path_of_video_tr[0])
     print('Train Length: ', len(path_of_video_tr))
     print('Test Length: ', len(path_of_video_test))
-    print('nframe_per_video', nframe_per_video)
+    #print('nframe_per_video', nframe_per_video)
 
     strategy = tf.distribute.MirroredStrategy()
     print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
@@ -115,7 +113,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = 16
         else:
             raise ValueError('Unsupported Model Type!')
-            
+
         if strategy.num_replicas_in_sync == 8:
             print('Using 8 GPUs for training!')
             args.batch_size = args.batch_size * 2
