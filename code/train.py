@@ -104,19 +104,19 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
     with strategy.scope():
-        if strategy.num_replicas_in_sync == 4:
-            print("Using 4 GPUs for training")
-            if args.temporal == 'CAN' or args.temporal == 'MT_CAN':
-                args.batch_size = 32
-            elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
-                args.batch_size = 12
-            elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN':
-                args.batch_size = 32
-            elif args.temporal == 'Hybrid_CAN' or args.temporal == 'MT_Hybrid_CAN':
-                args.batch_size = 16
-            else:
-                raise ValueError('Unsupported Model Type!')
-        elif strategy.num_replicas_in_sync == 8:
+        print("Using 4 GPUs for training")
+        if args.temporal == 'CAN' or args.temporal == 'MT_CAN':
+            args.batch_size = 32
+        elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
+            args.batch_size = 12
+        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN':
+            args.batch_size = 32
+        elif args.temporal == 'Hybrid_CAN' or args.temporal == 'MT_Hybrid_CAN':
+            args.batch_size = 16
+        else:
+            raise ValueError('Unsupported Model Type!')
+            
+        if strategy.num_replicas_in_sync == 8:
             print('Using 8 GPUs for training!')
             args.batch_size = args.batch_size * 2
         elif strategy.num_replicas_in_sync == 2:
