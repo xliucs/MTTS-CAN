@@ -31,8 +31,8 @@ parser = argparse.ArgumentParser()
 # data I/O
 parser.add_argument('-exp', '--exp_name', type=str,
                     help='experiment name')
-parser.add_argument('-i', '--data_dir', type=str, help='Location for the dataset')
-parser.add_argument('-o', '--save_dir', type=str, default='./rPPG-checkpoints',
+parser.add_argument('-i', '--data_dir', type=str, help='/mnt/share/StudiShare/sarah/Databases/')
+parser.add_argument('-o', '--save_dir', type=str, default='/home/quehl/Results/',
                     help='Location for parameter checkpoints and samples')
 parser.add_argument('-a', '--nb_filters1', type=int, default=32,
                     help='number of convolutional filters to use')
@@ -62,7 +62,7 @@ parser.add_argument('-save', '--save_all', type=int, default=1,
 parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
 parser.add_argument('-database', '--database_name', type=str, 
-                    default="COHFACE", help='Which database')                  
+                    default="MIX", help='Which database')                  
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -261,6 +261,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 # %% Training
 
 print('Using Split ', str(args.cv_split))
+print("DatabaseName:  ", args.database_name)
 if args.database_name != "MIX":
     subTrain, subTest = split_subj_(args.data_dir, args.database_name)
 else:
