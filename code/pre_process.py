@@ -126,6 +126,7 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
     elif database_name == "MIX":
         print(subTrain.keys())
         for database in subTrain.keys():
+            print(os.path.join(database, "**","*datafile.hdf5"))
             x = glob.glob(os.path.join(database, "**","*datafile.hdf5"),recursive=True)
             print(x)
             final.append(x)
