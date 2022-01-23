@@ -98,7 +98,6 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
         if train:
             for p in subTrain:
                 x = glob.glob(os.path.join(data_dir, '1)Training/UBFC-PHYS/s' + str(p), "s" + str(p) + "*"))
-                print(x)
                 x = sorted(x)
                 #x = sorted(x, key=take_last_ele)
                 final.append(x)
@@ -125,8 +124,10 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
     elif database_name == "MIX":
+        print(subTrain.keys())
         for database in subTrain.keys():
             x = glob.glob(os.path.join(database, "**","*datafile.hdf5"),recursive=True)
+            print(x)
             final.append(x)
         
     else: 
