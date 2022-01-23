@@ -91,6 +91,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     path_of_video_test = sort_dataFile_list_(args.data_dir, taskList, subTest, args.database_name, train=False)
     path_of_video_tr = list(itertools.chain(*path_of_video_tr))  # Fllaten the list
     path_of_video_test = list(itertools.chain(*path_of_video_test))
+    print("Train: ", path_of_video_tr)
+    print("Test: ",path_of_video_test)
 
     print('sample path: ', path_of_video_tr[0])
     nframe_per_video = get_nframe_video_(path_of_video_tr[0])
