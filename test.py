@@ -183,17 +183,17 @@ def test_heartpy(path):
 #databases = os.listdir(path , "1)Training")
 #print(databases[0])
 
-print(os.getcwd())
+# print(os.getcwd())
 
-print("START!")
-list_gpu = tf.config.list_physical_devices('GPU')
-print("GPU:   ", list_gpu)
-tf.keras.backend.clear_session()
-print(tf.__version__)
+# print("START!")
+# list_gpu = tf.config.list_physical_devices('GPU')
+# print("GPU:   ", list_gpu)
+# tf.keras.backend.clear_session()
+# print(tf.__version__)
 
 
-file = open("log.txt","w")
-file.write("Name:  ")
-file.write("fefefv\n" ), file.write("Train Subjects:  ")
-file.write("cscsc \n")
-file.close()
+# file = open("log.txt","w")
+# file.write("Name:  ")
+# file.write("fefefv\n" ), file.write("Train Subjects:  ")
+# file.write("cscsc \n")
+# file.close()

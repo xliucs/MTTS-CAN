@@ -62,7 +62,8 @@ parser.add_argument('-save', '--save_all', type=int, default=1,
 parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
 parser.add_argument('-database', '--database_name', type=str, 
-                    default="MIX", help='Which database')                  
+                    default="MIX", help='Which database')  
+parser.add_argument('-lo', '--loss_function', type=str, default="MAE")                
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -102,7 +103,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
     with strategy.scope():
-        print("Using 4 GPUs for training")
+        
         if args.temporal == 'CAN' or args.temporal == 'MT_CAN':
             args.batch_size = 32
         elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
@@ -122,6 +123,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         elif strategy.num_replicas_in_sync == 1:
             print('Using 1 GPU for training!')
             args.batch_size = 4
+        elif strategy.num_replicas_in_sync == 4:
+            print("Using 4 GPUs for training")
         else:
             raise Exception('Only supporting 4 GPUs or 8 GPUs now. Please adjust learning rate in the training script!')
 
@@ -182,6 +185,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         else:
             model.compile(loss='mean_squared_error', optimizer=optimizer)
         print('learning rate: ', args.lr)
+        print('batch size: ', args.batch_size)
 
         # %% Create data genener
         training_generator = DataGenerator(path_of_video_tr, nframe_per_video, (img_rows, img_cols),

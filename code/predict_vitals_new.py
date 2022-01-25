@@ -11,9 +11,11 @@ import matplotlib.pyplot as plt
 from scipy.signal import butter
 from inference_preprocess import preprocess_raw_video, detrend
 from sklearn.preprocessing import MinMaxScaler
-from hrvanalysis import get_time_domain_features, get_frequency_domain_features
+
+import heartpy as hp
 
 def predict_vitals(args):
+    mms = MinMaxScaler()
     img_rows = 36
     img_cols = 36
     frame_depth = 10
@@ -35,10 +37,11 @@ def predict_vitals(args):
     yptest = model.predict((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]), batch_size=batch_size, verbose=1)
 
     pulse_pred = yptest#[0]
-    pulse_pred = (pulse_pred - pulse_pred.min())/(pulse_pred.max() - pulse_pred.min()) * 2 -1
     pulse_pred = detrend(np.cumsum(pulse_pred), 100)
     [b_pulse, a_pulse] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_pred = scipy.signal.filtfilt(b_pulse, a_pulse, np.double(pulse_pred))
+    
+    pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
     
     ##### ground truth data resampled  #######
     if(str(sample_data_path).find("COHFACE")):
@@ -48,16 +51,17 @@ def predict_vitals(args):
     else:
         return("Error in finding the ground truth signal...")
     gound_truth_file = h5py.File(truth_path, "r")
-    pulse_truth = gound_truth_file["pulse"]
+    pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
     [b_pulse_tr, a_pulse_tr] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
-    ### range ground truth from -1 to 1
-    pulse_truth = (pulse_truth - pulse_truth.min())/(pulse_truth.max() - pulse_truth.min()) * 2 -1
+    pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
 
     ########### Peaks ###########
-    peaks_truth, peaks_ = np.array(signal.find_peaks(pulse_truth, prominence=0.5))
-    peaks_pred, b  = np.array(signal.find_peaks(pulse_pred, prominence=0.2))
+    working_data_pred, measures_pred = hp.process(pulse_pred, fs, calc_freq=True)
+    working_data_truth, measures_truth = hp.process(pulse_truth, fs, calc_freq=True)
+    peaks_pred = working_data_pred['peaklist']
+    peaks_truth = working_data_truth['peaklist']
 
      ########## Plot ##################
     plt.figure() #subplot(211)
@@ -83,30 +87,22 @@ def predict_vitals(args):
     plt.show()
 
     ########### IBI #############
-    ibi_truth = np.diff(peaks_truth)*(1000/fs)
+    ibi_truth = working_data_truth['RR_list_cor']
     print(ibi_truth)
-    ibi_pred = np.diff(peaks_pred)*(1000/fs)
+    ibi_pred = working_data_pred['RR_list_cor']
     print(ibi_pred)
     ######### HRV featurs ##############
-    time_domain_features = get_time_domain_features(ibi_truth)
-    time_domain_features_pred = get_time_domain_features(ibi_pred)
-    print(time_domain_features)
-    print(time_domain_features_pred)
-    freq_domain_features = get_frequency_domain_features(ibi_truth)
-    freq_domain_features_pred = get_frequency_domain_features(ibi_pred)
-    print(freq_domain_features)
-    print(freq_domain_features_pred)
+    print("HRV Truth:  ",measures_truth)
+    print("HRV Pred:  ", measures_pred)
     ####### Logging #############
     # neuer Ordner für Tests
     file = open(str(sample_data_path).replace(".avi", "_result.txt"),"w")
     file.write("LogFile\n\n")
     file.write("IBI: "), file.write(str(ibi_pred))
-    file.write("\nTime-domain features: "), file.write(str(time_domain_features_pred))
-    file.write("\nFrequency-domain features: "), file.write(str(freq_domain_features_pred))
+    file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred))
 
     file.write("\n\n\nGround truth infos!")
-    file.write("\nTime-domain features: "), file.write(str(time_domain_features))
-    file.write("\nFrequency-domain features: "), file.write(str(freq_domain_features))
+    file.write("\nHR and HRV features: "), file.write(str(measures_truth))
 
 if __name__ == "__main__":
 
