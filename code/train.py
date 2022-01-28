@@ -104,7 +104,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     print('Test Length: ', len(path_of_video_test))
     if len(list_gpu) > 1:
         print("Using MultiWorkerMirroredStrategy")
-        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
+        strategy = tf.distribute.MultiWorkerMirroredStrategy()
     else: 
         print("Using MirroredStrategy")
         strategy = tf.distribute.MirroredStrategy()
@@ -199,7 +199,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                 model.compile(loss=loss, optimizer=optimizer)
             else:
                 return ValueError('Unsupported Loss Function')
-                
+
         print('learning rate: ', args.lr)
         print('batch size: ', args.batch_size)
 
