@@ -117,7 +117,12 @@ class DataGenerator(data_utils.Sequence):
                 index_counter += current_nframe
             motion_data = data[:, :, :, :3]
             apperance_data = data[:, :, :, -3:]
-            max_data = num_window*self.frame_depth
+            
+            if num_window % 2 == 1:
+                num_window = num_window - 1
+                max_data = num_window * self.frame_depth
+            else: 
+                max_data = num_window*self.frame_depth
             motion_data = motion_data[0:max_data, :, :, :]
             apperance_data = apperance_data[0:max_data, :, :, :]
             label = label[0:max_data, 0]
