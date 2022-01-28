@@ -186,10 +186,10 @@ def test_heartpy(path):
 # print(os.getcwd())
 
 # print("START!")
-# list_gpu = tf.config.list_physical_devices('GPU')
-# print("GPU:   ", list_gpu)
-# tf.keras.backend.clear_session()
-# print(tf.__version__)
+list_gpu = tf.config.list_physical_devices()
+print("GPU:   ", list_gpu)
+tf.keras.backend.clear_session()
+print(tf.__version__)
 
 
 # file = open("log.txt","w")
@@ -197,3 +197,46 @@ def test_heartpy(path):
 # file.write("fefefv\n" ), file.write("Train Subjects:  ")
 # file.write("cscsc \n")
 # file.close()
+
+# import tensorflow as tf
+# from tensorflow.python.keras import backend as K
+# from tensorflow.python.framework import ops
+# from tensorflow.python.ops import math_ops
+
+# x = np.array([1,2,3,4,5])
+# y = np.array([1,2,3,4,5])
+
+
+# x = tf.convert_to_tensor(x)
+# y = tf.convert_to_tensor(y)
+# print(x)
+# print(sum(x*y))
+
+# def negPearsonLoss(x, y): # x truth y: pred
+
+#     y = ops.convert_to_tensor(y)
+#     x = math_ops.cast(x, y.dtype)
+
+#     mean_y = tf.math.reduce_mean(y)
+#     mean_x = tf.math.reduce_mean(x)
+#     print(mean_y)
+#     print(mean_x)
+
+#     coeff1 = (y - mean_y)
+#     coeff2 = (x-mean_x)
+#     nominator = tf.reduce_sum(coeff1*coeff2)
+#     denominator = tf.sqrt(tf.reduce_sum(coeff1)**2)*tf.sqrt(tf.reduce_sum(coeff2)**2)
+
+#     pear_coeff = nominator/denominator
+
+#     negPearson_coeff = 1 - pear_coeff
+
+    
+
+#     return negPearson_coeff
+
+
+
+# coeff = negPearsonLoss(x,y)
+
+# print("READY: ", coeff)

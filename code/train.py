@@ -10,6 +10,8 @@ import argparse
 import itertools
 import json
 import os
+
+from losses import negPearsonLoss
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import numpy as np
 import scipy.io
@@ -22,7 +24,10 @@ from pre_process import get_nframe_video, split_subj, sort_video_list, split_sub
 
 np.random.seed(100)  # for reproducibility
 print("START!")
-tf.config.list_physical_devices('GPU')
+list_gpu = tf.config.list_physical_devices('GPU')
+#tf.config.experimental.set_memory_growth(list_gpu[0], enable=True)
+#tf.config.experimental.set_memory_growth(list_gpu[1], enable=True)
+print(list_gpu)
 tf.keras.backend.clear_session()
 print(tf.__version__)
 
@@ -63,7 +68,7 @@ parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
 parser.add_argument('-database', '--database_name', type=str, 
                     default="MIX", help='Which database')  
-parser.add_argument('-lo', '--loss_function', type=str, default="MAE")                
+parser.add_argument('-lo', '--loss_function', type=str, default="MSE")                
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -97,9 +102,12 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     nframe_per_video = get_nframe_video_(path_of_video_tr[0])
     print('Train Length: ', len(path_of_video_tr))
     print('Test Length: ', len(path_of_video_test))
-    #print('nframe_per_video', nframe_per_video)
-
-    strategy = tf.distribute.MirroredStrategy()
+    if len(list_gpu) > 1:
+        print("Using MultiWorkerMirroredStrategy")
+        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
+    else: 
+        print("Using MirroredStrategy")
+        strategy = tf.distribute.MirroredStrategy()
     print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
     with strategy.scope():
@@ -119,6 +127,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             print('Using 8 GPUs for training!')
             args.batch_size = args.batch_size * 2
         elif strategy.num_replicas_in_sync == 2:
+            print('Using 2 GPUs for training!')
             args.batch_size = args.batch_size // 2
         elif strategy.num_replicas_in_sync == 1:
             print('Using 1 GPU for training!')
@@ -175,7 +184,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                                   nb_dense=args.nb_dense)
         else:
             raise ValueError('Unsupported Model Type!')
-
+        
         optimizer = adadelta_v2.Adadelta(learning_rate=args.lr)
         if args.temporal == 'MTTS_CAN' or args.temporal == 'MT_Hybrid_CAN' or args.temporal == 'MT_CAN_3D' or \
                 args.temporal == 'MT_CAN':
@@ -183,7 +192,14 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             loss_weights = {"output_1": 1.0, "output_2": 1.0}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
         else:
-            model.compile(loss='mean_squared_error', optimizer=optimizer)
+            if args.loss_function == "MSE":
+                model.compile(loss='mean_squared_error', optimizer=optimizer)
+            elif args.loss_function == "negPearson":
+                loss = negPearsonLoss
+                model.compile(loss=loss, optimizer=optimizer)
+            else:
+                return ValueError('Unsupported Loss Function')
+                
         print('learning rate: ', args.lr)
         print('batch size: ', args.batch_size)
 

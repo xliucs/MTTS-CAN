@@ -38,9 +38,8 @@ def predict_vitals(args):
 
     pulse_pred = yptest#[0]
     pulse_pred = detrend(np.cumsum(pulse_pred), 100)
-    [b_pulse, a_pulse] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
-    pulse_pred = scipy.signal.filtfilt(b_pulse, a_pulse, np.double(pulse_pred))
-    
+    [b_pulse_pred, a_pulse_pred] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
+    pulse_pred = scipy.signal.filtfilt(b_pulse_pred, a_pulse_pred, np.double(pulse_pred))
     pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
     
     ##### ground truth data resampled  #######
@@ -55,7 +54,7 @@ def predict_vitals(args):
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
     [b_pulse_tr, a_pulse_tr] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
-    pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
+    pulse_truth = np.array(mms.fit_transform(pulse_truth.reshape(-1,1))).flatten()
 
     ########### Peaks ###########
     working_data_pred, measures_pred = hp.process(pulse_pred, fs, calc_freq=True)

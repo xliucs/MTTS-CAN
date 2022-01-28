@@ -89,7 +89,7 @@ tested with Tensorflow-gpu=2.3
 
 `conda create -n tf-gpu tensorflow-gpu cudatoolkit=10.1` -- this command takes care of both CUDA and TF environments.
 
-`pip install opencv-python scipy numpy matplotlib hrv-analysis`
+`pip install opencv-python scipy numpy matplotlib hrv-analysis heartpy scikit-learn`
 
 If`pip install opencv-python` does not work, I found these commands always work on my mac.
 
