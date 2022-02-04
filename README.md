@@ -74,6 +74,8 @@ python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Dat
 python code/predict_vitals.py --video_path E:\Databases\Validation\UBFC-Phys\s28\s28\vid_s28_T1.avi
 python code/predict_vitals.py --video_path E:\Databases\Training\COHFACE\4\1\data.avi --sampling_rate 20
 
+python code/predict_vitals.py --video_path E:\Databases\3)Testing\COHFACE\22\0\data.avi --sampling_rate 20
+
 The default video sampling rate is 30Hz.
 
 #### Note

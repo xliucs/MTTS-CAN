@@ -47,6 +47,7 @@ class DataGenerator(data_utils.Sequence):
 
     def __data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
+        #max_vid_len = 
         if self.respiration == 1:
             label_key = "drsub"
         else:
@@ -62,6 +63,10 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
+                if dXsub.shape[0] > 500: # only 30 sek videos
+                  dXsub = dXsub[0:500, :,:,:]
+                  dysub = dysub[0:500]
+                  
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
                 tempY = np.array([dysub[f:f + self.frame_depth] #(491,10,1) - (169, 10, 1)
@@ -90,7 +95,12 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                current_nframe = dXsub.shape[0]
+                if dXsub.shape[0] > 2100: # only 1 min videos
+                  current_nframe = 2100
+                  dXsub = dXsub[0:2100, :,:,:]
+                  dysub = dysub[0:2100]
+                else:
+                  current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
                 index_counter += current_nframe
@@ -100,7 +110,9 @@ class DataGenerator(data_utils.Sequence):
             motion_data = motion_data[0:max_data, :, :, :]
             apperance_data = apperance_data[0:max_data, :, :, :]
             label = label[0:max_data, 0]
+            
             output = (motion_data, apperance_data)
+            
         elif self.temporal == 'TS_CAN':
             sum_frames_batch = get_frame_sum(list_video_temp)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
@@ -111,7 +123,12 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                current_nframe = dXsub.shape[0]
+                if dXsub.shape[0] > 2100: # only 1 min videos
+                  current_nframe = 2100
+                  dXsub = dXsub[0:2100, :,:,:]
+                  dysub = dysub[0:2100]
+                else:
+                  current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
                 index_counter += current_nframe
@@ -143,6 +160,9 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.transpose(np.array(f1["dXsub"]))
                 dysub = np.array(f1[label_key])
+                if dXsub.shape[0] > 500: # only 30 sek videos
+                  dXsub = dXsub[0:500, :,:,:]
+                  dysub = dysub[0:500]
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
                 tempY = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
@@ -273,6 +293,9 @@ def get_frame_sum(list_vid):
     for vid in list_vid:
         hf = h5py.File(vid, 'r')
         shape = hf['data'].shape
-        frames_sum += shape[0]
+        if shape[0] > 500:
+          frames_sum += 500
+        else: 
+          frames_sum += shape[0]
         counter += 1
     return frames_sum

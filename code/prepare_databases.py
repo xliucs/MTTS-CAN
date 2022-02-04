@@ -66,8 +66,9 @@ def dataSet_preprocess(vid, name):
             os.remove(str(vid).replace(".avi", "_dataFile.hdf5"))
             print("deleted")
         if os.path.exists(str(vid).replace(".avi", "_dataFile.hdf5").replace('vid_', '')):
-            os.remove(str(vid).replace(".avi", "_dataFile.hdf5").replace('vid_', ''))
-            print("deleted")
+            os.rename(str(vid).replace(".avi", "_dataFile.hdf5").replace('vid_', ''), 
+            str(vid).replace(".avi", "_dataFileAll.hdf5").replace('vid_', ''))
+            print("Rename")
 
         dXsub, fps = preprocess_raw_video(vid, 36)
         print(dXsub.shape)
@@ -102,7 +103,12 @@ def build_h5py(vid, name):
         peak_list.remove(item) # list with position of the peaks
    
     # new summary file
-    newPath_name = str(vid).replace(".avi", "_dataFile.hdf5")
+    # for UBFC_PHYS divide it in two 1min files
+    if name == "UBFC_PHYS":
+        newPath_name1 = str(vid).replace(".avi", "_0_dataFile.hdf5")
+        newPath_name2 = str(vid).replace(".avi", "_1_dataFile.hdf5")
+    else:   
+        newPath_name = str(vid).replace(".avi", "_dataFile.hdf5")
     if name=="UBFC_PHYS":
         newPath_name = newPath_name.replace('vid_', '')
     data_file = h5py.File(newPath_name, 'a')
@@ -123,14 +129,12 @@ def prepare_database(name, tasks, data_dir):
         taskList = list(range(0, tasks))
     else: 
         print("Not implemented yet")
-    #subTrain, subTest = split_subj_(data_dir, name)
-    subTrain = []
-    subTest = np.array(range(46,57)).tolist()
+    subTrain, subTest = split_subj_(data_dir, name)
     print("subTrain:   ", subTrain)
     print("subTest:   ", subTest)
     video_path_list_tr  = sort_video_list_(data_dir, taskList, subTrain, name, True)
     video_path_list_test  = sort_video_list_(data_dir, taskList, subTest, name, False)
-    video_path_list_tr =  list(itertools.chain(*video_path_list_tr))
+    video_path_list_tr =  list(itertools.chain(*video_path_list_tr))   
     video_path_list_test = list(itertools.chain(*video_path_list_test))
 
     for vid in video_path_list_tr:

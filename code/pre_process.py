@@ -61,13 +61,14 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
     if database_name == "UBFC_PHYS":
         if train:
             for p in subTrain:
-                x = glob.glob(os.path.join(data_dir, 'Training/UBFC-PHYS/s' + str(p), 'vid_s*'))
+                
+                x = glob.glob(os.path.join(data_dir, '1)Training/UBFC-PHYS/s' + str(p), 'vid_s*'))
                 x = sorted(x)
                 #x = sorted(x, key=take_last_ele)
                 final.append(x)
         else:
            for p in subTrain:
-                x = glob.glob(os.path.join(data_dir, 'Validation/UBFC-PHYS/s' + str(p), 'vid_s*'))
+                x = glob.glob(os.path.join(data_dir, '2)Validation/UBFC-PHYS/s' + str(p), 'vid_s*'))
                 x = sorted(x)
                 #x = sorted(x, key=take_last_ele)
                 final.append(x)
