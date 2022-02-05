@@ -2,7 +2,7 @@
 # Defines different Loss Functions. 
 # Currently implemented:
 # - Negative Pearson Coefficient
-from tkinter import Y
+f""" rom tkinter import Y
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
@@ -28,4 +28,4 @@ def negPearsonLoss(x, y):
 
     negPearson_coeff = 1 - pear_coeff
 
-    return negPearson_coeff
+    return negPearson_coeff """

@@ -10,8 +10,9 @@ import argparse
 import itertools
 import json
 import os
+from xmlrpc.client import boolean
 
-from losses import negPearsonLoss
+#from losses import negPearsonLoss
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import numpy as np
 import scipy.io
@@ -68,7 +69,9 @@ parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
 parser.add_argument('-database', '--database_name', type=str, 
                     default="MIX", help='Which database')  
-parser.add_argument('-lo', '--loss_function', type=str, default="MSE")                
+parser.add_argument('-lo', '--loss_function', type=str, default="MSE") 
+parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
+parser.add_argument('-ml', '--maxFrames_video', type=int, default=2100, help="frames")   
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -92,14 +95,14 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     print('subTest', subTest)
 
     input_shape = (img_rows, img_cols, 3)
+    maxLen_video = args.maxFrames_video
 
     path_of_video_tr = sort_dataFile_list_(args.data_dir, taskList, subTrain, args.database_name, train=True)
     path_of_video_test = sort_dataFile_list_(args.data_dir, taskList, subTest, args.database_name, train=False)
     path_of_video_tr = list(itertools.chain(*path_of_video_tr))  # Fllaten the list
     path_of_video_test = list(itertools.chain(*path_of_video_test))
 
-    print('sample path: ', path_of_video_tr[0])
-    nframe_per_video = get_nframe_video_(path_of_video_tr[0])
+    #nframe_per_video = get_nframe_video_(path_of_video_tr[0])
     print('Train Length: ', len(path_of_video_tr))
     print('Test Length: ', len(path_of_video_test))
     if len(list_gpu) > 1:
@@ -204,10 +207,10 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         print('batch size: ', args.batch_size)
 
         # %% Create data genener
-        training_generator = DataGenerator(path_of_video_tr, nframe_per_video, (img_rows, img_cols),
+        training_generator = DataGenerator(path_of_video_tr, maxLen_video, (img_rows, img_cols),
                                            batch_size=args.batch_size, frame_depth=args.frame_depth,
                                            temporal=args.temporal, respiration=args.respiration, database_name=args.database_name)
-        validation_generator = DataGenerator(path_of_video_test, nframe_per_video, (img_rows, img_cols),
+        validation_generator = DataGenerator(path_of_video_test, maxLen_video, (img_rows, img_cols),
                                              batch_size=args.batch_size, frame_depth=args.frame_depth,
                                              temporal=args.temporal, respiration=args.respiration, database_name=args.database_name)
       
@@ -250,11 +253,11 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         print('****************************************')
         print('Start saving predicitions from the last epoch')
 
-        training_generator = DataGenerator(path_of_video_tr, nframe_per_video, (img_rows, img_cols),
+        training_generator = DataGenerator(path_of_video_tr, maxLen_video, (img_rows, img_cols),
                                            batch_size=args.batch_size, frame_depth=args.frame_depth,
                                            temporal=args.temporal, respiration=args.respiration, shuffle=False)
 
-        validation_generator = DataGenerator(path_of_video_test, nframe_per_video, (img_rows, img_cols),
+        validation_generator = DataGenerator(path_of_video_test, maxLen_video, (img_rows, img_cols),
                                              batch_size=args.batch_size, frame_depth=args.frame_depth,
                                              temporal=args.temporal, respiration=args.respiration, shuffle=False)
 
@@ -286,6 +289,19 @@ if args.database_name != "MIX":
     subTrain, subTest = split_subj_(args.data_dir, args.database_name)
 else:
     subTrain, subTest = collect_subj(args.data_dir)
+
+if args.decrease_database == True:
+    if args.database_name == "COHFACE":
+        subTrain = subTrain[0:20]
+        subTest = subTest[0:6]
+    elif args.database_name == "UBFC_PHYS":
+        subTrain = subTrain[0:25]
+        subTest = subTest[0:10]
+    elif args.database_name == "MIX":
+        for key in subTrain.keys():
+            subTrain[key] = subTrain[key][0:25]
+        for key in subTest.keys():
+            subTest[key] = subTest[key][0:10]
 
 train(args, subTrain, subTest, args.cv_split)
 

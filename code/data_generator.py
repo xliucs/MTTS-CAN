@@ -14,12 +14,12 @@ from tensorflow.python.keras.utils import data_utils
 
 class DataGenerator(data_utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, paths_of_videos, nframe_per_video, dim, batch_size=32, frame_depth=10,
+    def __init__(self, paths_of_videos, maxLen_Video, dim, batch_size=32, frame_depth=10,
                  shuffle=True, temporal=True, respiration=0, database_name = None):
         self.dim = dim
         self.batch_size = batch_size
         self.paths_of_videos = paths_of_videos
-        self.nframe_per_video = nframe_per_video
+        self.maxLen_Video = maxLen_Video
         self.shuffle = shuffle
         self.temporal = temporal
         self.frame_depth = frame_depth
@@ -54,7 +54,7 @@ class DataGenerator(data_utils.Sequence):
             label_key = 'dysub'
 
         if self.temporal == 'CAN_3D':
-            sum_frames_batch = get_frame_sum(list_video_temp)
+            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1],self.frame_depth,  6), dtype=np.float32)
             label = np.zeros((sum_frames_batch, self.frame_depth), dtype=np.float32)
             num_window = int(sum_frames_batch/ self.frame_depth)
@@ -63,9 +63,9 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > 500: # only 30 sek videos
-                  dXsub = dXsub[0:500, :,:,:]
-                  dysub = dysub[0:500]
+                if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
+                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                  dysub = dysub[0:self.maxLen_Video]
                   
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
@@ -86,7 +86,7 @@ class DataGenerator(data_utils.Sequence):
             output = (motion_data, apperance_data)
         
         elif self.temporal == 'CAN':
-            sum_frames_batch = get_frame_sum(list_video_temp)
+            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
             label = np.zeros((sum_frames_batch, 1), dtype=np.float32)
             num_window = int(sum_frames_batch/ self.frame_depth)
@@ -95,10 +95,10 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > 2100: # only 1 min videos
-                  current_nframe = 2100
-                  dXsub = dXsub[0:2100, :,:,:]
-                  dysub = dysub[0:2100]
+                if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
+                  current_nframe = self.maxLen_Video
+                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                  dysub = dysub[0:self.maxLen_Video]
                 else:
                   current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
@@ -114,7 +114,7 @@ class DataGenerator(data_utils.Sequence):
             output = (motion_data, apperance_data)
             
         elif self.temporal == 'TS_CAN':
-            sum_frames_batch = get_frame_sum(list_video_temp)
+            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
             label = np.zeros((sum_frames_batch, 1), dtype=np.float32)
             num_window = int(sum_frames_batch/ self.frame_depth)
@@ -123,10 +123,10 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > 2100: # only 1 min videos
-                  current_nframe = 2100
-                  dXsub = dXsub[0:2100, :,:,:]
-                  dysub = dysub[0:2100]
+                if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
+                  current_nframe = self.maxLen_Video
+                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                  dysub = dysub[0:self.maxLen_Video]
                 else:
                   current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
@@ -160,9 +160,9 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.transpose(np.array(f1["dXsub"]))
                 dysub = np.array(f1[label_key])
-                if dXsub.shape[0] > 500: # only 30 sek videos
-                  dXsub = dXsub[0:500, :,:,:]
-                  dysub = dysub[0:500]
+                if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
+                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                  dysub = dysub[0:self.maxLen_Video]
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
                 tempY = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
@@ -219,7 +219,7 @@ class DataGenerator(data_utils.Sequence):
             output = (data[:, :, :, :, :3], data[:, :, :, :, -3:])
             label = (label_y, label_r)
         elif self.temporal == 'MTTS_CAN':
-            sum_frames_batch = get_frame_sum(list_video_temp)
+            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
             label_y = np.zeros((sum_frames_batch, 1), dtype=np.float32)
             label_r = np.zeros((sum_frames_batch, 1), dtype=np.float32)
@@ -287,14 +287,14 @@ def find_csv(video_path):
     csv_path = str(video_path).replace("vid", "bvp").replace(".avi", ".csv")
     return csv_path
 
-def get_frame_sum(list_vid):
+def get_frame_sum(list_vid, maxLen_Video):
     frames_sum = 0
     counter = 0
     for vid in list_vid:
         hf = h5py.File(vid, 'r')
         shape = hf['data'].shape
-        if shape[0] > 500:
-          frames_sum += 500
+        if shape[0] > maxLen_Video:
+          frames_sum += maxLen_Video
         else: 
           frames_sum += shape[0]
         counter += 1

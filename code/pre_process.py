@@ -77,14 +77,14 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
         if train:
             for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, 'Training/COHFACE/', str(p), str(t), 'data.avi'))
+                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE/', str(p), str(t), 'data.avi'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
         else:
              for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, 'Validation/COHFACE/', str(p), str(t), 'data.avi'))
+                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), 'data.avi'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
@@ -112,14 +112,14 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
         if train:
             for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE/', str(p), str(t), 'data_datafile.hdf5'))
+                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE', str(p), str(t), '*dataFile.hdf5'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
         else:
              for p in subTrain:
                 for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), 'data_datafile.hdf5'))
+                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), '*dataFile.hdf5'))
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
