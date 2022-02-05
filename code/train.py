@@ -299,7 +299,7 @@ if args.decrease_database == True:
         subTest = subTest[0:10]
     elif args.database_name == "MIX":
         for key in subTrain.keys():
-            subTrain[key] = subTrain[key][0:25]
+            subTrain[key] = subTrain[key][0:20]
         for key in subTest.keys():
             subTest[key] = subTest[key][0:10]
 

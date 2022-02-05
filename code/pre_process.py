@@ -125,8 +125,9 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
                     final.append(x)
     elif database_name == "MIX":
         for database in subTrain.keys():
-            x = glob.glob(os.path.join(database, "**","*dataFile.hdf5"),recursive=True)
-            final.append(x)
+            for subj in subTrain[database]:
+                x = glob.glob(os.path.join(database,subj, "**","*dataFile.hdf5"),recursive=True)
+                final.append(x)
         
     else: 
         print("not implemented yet.")
