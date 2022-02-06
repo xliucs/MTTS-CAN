@@ -152,14 +152,15 @@ class DataGenerator(data_utils.Sequence):
             output = (motion_data, apperance_data)
 
         elif self.temporal == 'Hybrid_CAN':
-            num_window = self.nframe_per_video - (self.frame_depth + 1)
+            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
+            num_window = int(sum_frames_batch/ self.frame_depth)
             data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
                             dtype=np.float32)
             label = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
-                dXsub = np.transpose(np.array(f1["dXsub"]))
-                dysub = np.array(f1[label_key])
+                dXsub = np.array(f1['data'])
+                dysub = np.array(f1['pulse'])
                 if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
                   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
                   dysub = dysub[0:self.maxLen_Video]

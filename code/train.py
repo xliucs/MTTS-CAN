@@ -11,8 +11,8 @@ import itertools
 import json
 import os
 from xmlrpc.client import boolean
+from losses import negPearsonLoss
 
-#from losses import negPearsonLoss
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import numpy as np
 import scipy.io
@@ -234,7 +234,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 
         # %% Model Training and Saving Results
         history = model.fit(x=training_generator, validation_data=validation_generator, epochs=args.nb_epoch, 
-                    verbose=1, shuffle=False, callbacks=[csv_logger, save_best_callback, hb_callback], validation_freq=4)
+                    verbose=1, shuffle=True, callbacks=[csv_logger, save_best_callback, hb_callback], validation_freq=4)
 
         val_loss_history = history.history['val_loss']
         val_loss = np.array(val_loss_history)
