@@ -1,9 +1,10 @@
 '''
 Data Generator for Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
 Author: Xin Liu
+
+Further Development: Sarah Quehl
 '''
 
-import imp
 import math
 
 import h5py
@@ -47,11 +48,6 @@ class DataGenerator(data_utils.Sequence):
 
     def __data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
-        #max_vid_len = 
-        if self.respiration == 1:
-            label_key = "drsub"
-        else:
-            label_key = 'dysub'
 
         if self.temporal == 'CAN_3D':
             sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)

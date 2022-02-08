@@ -21,7 +21,7 @@ from tensorflow.python.keras.optimizers import adadelta_v2
 from data_generator import DataGenerator
 from model import HeartBeat, CAN, CAN_3D, Hybrid_CAN, TS_CAN, MTTS_CAN, \
     MT_Hybrid_CAN, MT_CAN_3D, MT_CAN
-from pre_process import get_nframe_video, split_subj, sort_video_list, split_subj_, sort_video_list_, get_nframe_video_, sort_dataFile_list_, collect_subj
+from pre_process import split_subj_, sort_dataFile_list_, collect_subj
 
 np.random.seed(100)  # for reproducibility
 print("START!")
@@ -198,6 +198,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             if args.loss_function == "MSE":
                 model.compile(loss='mean_squared_error', optimizer=optimizer)
             elif args.loss_function == "negPearson":
+                print("negative Pearson Loss ")
                 loss = negPearsonLoss
                 model.compile(loss=loss, optimizer=optimizer)
             else:
@@ -273,6 +274,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         file.write("Name:  "), file.write(args.exp_name)
         file.write("\nModel:   "), file.write(args.temporal)
         file.write("\nBatch Size:   "), file.write(str(args.batch_size))
+        file.write("\nLoss Function:  "), file.write(args.loss_function)
         file.write("\nLearningrate:   "), file.write(str(args.lr))
         file.write("\nTrain Subjects:  "), file.write(str(subTrain))
         file.write("\nValidation Subjects:  "), file.write(str(subTest))
@@ -299,9 +301,9 @@ if args.decrease_database == True:
         subTest = subTest[0:10]
     elif args.database_name == "MIX":
         for key in subTrain.keys():
-            subTrain[key] = subTrain[key][0:20]
+            subTrain[key] = subTrain[key][0:6]
         for key in subTest.keys():
-            subTest[key] = subTest[key][0:10]
+            subTest[key] = subTest[key][0:3]
 
 train(args, subTrain, subTest, args.cv_split)
 
