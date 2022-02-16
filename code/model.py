@@ -183,11 +183,6 @@ def CAN_3D(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3, 3)
     model = Model(inputs=[diff_input, rawf_input], outputs=out)
     return model
 
-
-# input_shape = (36, 36, 10, 3)
-# model = DeepPhy_3DCNN(10, 32, 64, input_shape)
-# print('==========================')
-
 # %%
 def Hybrid_CAN(n_frame, nb_filters1, nb_filters2, input_shape_1, input_shape_2, kernel_size_1=(3, 3, 3),
                kernel_size_2=(3, 3), dropout_rate1=0.25, dropout_rate2=0.5, pool_size_1=(2, 2, 2), pool_size_2=(2, 2),

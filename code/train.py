@@ -10,10 +10,9 @@ import argparse
 import itertools
 import json
 import os
-from xmlrpc.client import boolean
-from losses import negPearsonLoss
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+from xmlrpc.client import boolean
+from losses import negPearsonLoss, negPearsonLoss_onlyPeaks
 import numpy as np
 import scipy.io
 import tensorflow as tf
@@ -197,9 +196,13 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         else:
             if args.loss_function == "MSE":
                 model.compile(loss='mean_squared_error', optimizer=optimizer)
-            elif args.loss_function == "negPearson":
+            elif args.loss_function == "negPea":
                 print("negative Pearson Loss ")
                 loss = negPearsonLoss
+                model.compile(loss=loss, optimizer=optimizer)
+            elif args.loss_function == "negPea_Peak":
+                print("negative Pearson Loss of the Peaks")
+                loss = negPearsonLoss_onlyPeaks
                 model.compile(loss=loss, optimizer=optimizer)
             else:
                 return ValueError('Unsupported Loss Function')
@@ -275,6 +278,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         file.write("\nModel:   "), file.write(args.temporal)
         file.write("\nBatch Size:   "), file.write(str(args.batch_size))
         file.write("\nLoss Function:  "), file.write(args.loss_function)
+        file.write("\nMax Frames Video: "), file.write(str(args.maxFrames_video))
         file.write("\nLearningrate:   "), file.write(str(args.lr))
         file.write("\nTrain Subjects:  "), file.write(str(subTrain))
         file.write("\nValidation Subjects:  "), file.write(str(subTest))
@@ -294,8 +298,8 @@ else:
 
 if args.decrease_database == True:
     if args.database_name == "COHFACE":
-        subTrain = subTrain[0:20]
-        subTest = subTest[0:6]
+        subTrain = subTrain[0:10]
+        subTest = subTest[0:3]
     elif args.database_name == "UBFC_PHYS":
         subTrain = subTrain[0:25]
         subTest = subTest[0:10]
