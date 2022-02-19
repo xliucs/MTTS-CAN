@@ -3,11 +3,9 @@
 # Currently implemented:
 # - Negative Pearson Coefficient
 
-from matplotlib.pyplot import get
 import tensorflow as tf
-import heartpy as hp
 
-
+import tensorflow.keras.backend as K
 
 # Negative Pearson Coefficient
 # x: truth rPPG    y: predicted rPPG
@@ -26,33 +24,38 @@ def negPearsonLoss(x,y):
     
     p = tf.divide(s_xy, sx_sy)
     
-    negPearson_coeff = 1 - p
+    negPearson_coeff = 1. - p
 
     return negPearson_coeff
+
 
 @tf.function
 def negPearsonLoss_onlyPeaks(y_true, y_pred):
     peaks_true = get_peaks(y_true)
     peaks_pred = get_peaks(y_pred)
-    peaks_true, peaks_pred = filt_peaks(peaks_true, peaks_pred)
+    peaks_pred = peaks_pred[0:10]
+    peaks_true = peaks_true[0:10]
+    #peaks_true, peaks_pred = filt_peaks(peaks_true, peaks_pred)
     peaks_true = tf.cast(peaks_true, tf.float32)
     peaks_pred = tf.cast(peaks_pred, tf.float32)
-    print("CHECK")
+
     negPeaLoss = negPearsonLoss(peaks_true, peaks_pred)
     return negPeaLoss
 
-@tf.function
+
 def get_peaks(y):
     # y: (N,)
     data_reshaped = tf.reshape(y, (1, -1, 1)) # (1, N, 1)
-    max_pooled_in_tensor = tf.nn.pool(data_reshaped, window_shape=(20,), pooling_type='MAX', padding='SAME')
-    maxima = tf.equal(data_reshaped,max_pooled_in_tensor) # (1, N, 1)
-    maxima = tf.cast(maxima, tf.float64)
-    maxima = tf.squeeze(maxima) # (N,1)
-    peaks = tf.where(maxima) # now only the Peak Indices (A, 3)
-    peaks = tf.reshape(peaks, (-1,)) # (A,1)
+    max_pooled_in_tensor =  tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
+    
+    #maxima = tf.stop_gradient(tf.equal(data_reshaped,max_pooled_in_tensor)) # (1, N, 1)
+    #maxima = tf.cast(maxima, tf.float32)
+    #maxima = tf.squeeze(maxima) # (N,1)
+    #peaks = tf.where(maxima, name="Where") # now only the Peak Indices (A, 3)
+    #tf.no_gradient("Where")
+    #peaks = tf.reshape(peaks, (-1,)) # (A,1)
 
-    return peaks
+    return max_pooled_in_tensor
 
 # x: true y: prediction
 # input: peaks of truth and prediction as tensor...
@@ -67,12 +70,21 @@ def filt_peaks(x,y):
     # check which peaks of truth are recognized in pred
     min = 0
     min = tf.cast(min, tf.int64)
-    for item in y: # items of predicion
+
+    def fn(item):
         diff = tf.abs(x - item) # diff of truth data and item
         min = tf.reduce_min(diff) # minimum of diff
         min = tf.cond(tf.less(min, max_offset), true_fn, false_fn)
         temp_mask = tf.equal(min, diff)
         mask = tf.logical_or(mask, temp_mask)
+        return mask
+    mask = tf.map_fn(fn=lambda item: fn(item), elems=y)
+    # for item in y: # items of predicion
+    #     diff = tf.abs(x - item) # diff of truth data and item
+    #     min = tf.reduce_min(diff) # minimum of diff
+    #     min = tf.cond(tf.less(min, max_offset), true_fn, false_fn)
+    #     temp_mask = tf.equal(min, diff)
+    #     mask = tf.logical_or(mask, temp_mask)
 
     x = tf.boolean_mask(x, mask)
     # check if outliners are in pred
@@ -84,5 +96,4 @@ def filt_peaks(x,y):
         temp_mask = tf.equal(min, diff)
         mask = tf.logical_or(mask, temp_mask)
     y = tf.boolean_mask(y,mask)
-
     return x, y 

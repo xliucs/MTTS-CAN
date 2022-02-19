@@ -11,6 +11,7 @@ import itertools
 import json
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+
 from xmlrpc.client import boolean
 from losses import negPearsonLoss, negPearsonLoss_onlyPeaks
 import numpy as np
@@ -19,7 +20,7 @@ import tensorflow as tf
 from tensorflow.python.keras.optimizers import adadelta_v2
 from data_generator import DataGenerator
 from model import HeartBeat, CAN, CAN_3D, Hybrid_CAN, TS_CAN, MTTS_CAN, \
-    MT_Hybrid_CAN, MT_CAN_3D, MT_CAN
+    MT_Hybrid_CAN, MT_CAN_3D, MT_CAN, PTS_CAN
 from pre_process import split_subj_, sort_dataFile_list_, collect_subj
 
 np.random.seed(100)  # for reproducibility
@@ -29,6 +30,7 @@ list_gpu = tf.config.list_physical_devices('GPU')
 #tf.config.experimental.set_memory_growth(list_gpu[1], enable=True)
 print(list_gpu)
 tf.keras.backend.clear_session()
+tf.autograph.set_verbosity(10)
 print(tf.__version__)
 
 # %%
@@ -59,9 +61,9 @@ parser.add_argument('-t', '--nb_task', type=int, default=12,
                     help='nb_task')
 parser.add_argument('-fd', '--frame_depth', type=int, default=10,
                     help='frame_depth for CAN_3D, TS_CAN, Hybrid_CAN')
-parser.add_argument('-temp', '--temporal', type=str, default='MTTS_CAN',
+parser.add_argument('-temp', '--temporal', type=str, default='PTS_CAN',
                     help='CAN, MT_CAN, CAN_3D, MT_CAN_3D, Hybrid_CAN, \
-                    MT_Hybrid_CAN, TS_CAN, MTTS_CAN ')
+                    MT_Hybrid_CAN, TS_CAN, MTTS_CAN. PTS_CAN ')
 parser.add_argument('-save', '--save_all', type=int, default=1,
                     help='save all or not')
 parser.add_argument('-resp', '--respiration', type=int, default=0,
@@ -118,7 +120,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = 32
         elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
             args.batch_size = 12
-        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN':
+        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN' or 'PTS_CAN':
             args.batch_size = 16#32
         elif args.temporal == 'Hybrid_CAN' or args.temporal == 'MT_Hybrid_CAN':
             args.batch_size = 16
@@ -163,6 +165,11 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             input_shape = (img_rows, img_cols, 3)
             model = TS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
+        elif args.temporal == 'PTS_CAN':
+            print('Using TS_CAN!')
+            input_shape = (img_rows, img_cols, 3)
+            model = PTS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
+                           dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
         elif args.temporal == 'MTTS_CAN':
             print('Using MTTS_CAN!')
             input_shape = (img_rows, img_cols, 3)
@@ -193,6 +200,10 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             losses = {"output_1": "mean_squared_error", "output_2": "mean_squared_error"}
             loss_weights = {"output_1": 1.0, "output_2": 1.0}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
+        elif args.temporal == 'PTS_CAN':
+            losses = {"output_1": "mean_squared_error", "output_2": "mean_squared_error"}
+            loss_weights = {"output_1": 1.0, "output_2": 1.0}
+            model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
         else:
             if args.loss_function == "MSE":
                 model.compile(loss='mean_squared_error', optimizer=optimizer)
@@ -203,7 +214,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             elif args.loss_function == "negPea_Peak":
                 print("negative Pearson Loss of the Peaks")
                 loss = negPearsonLoss_onlyPeaks
-                model.compile(loss=loss, optimizer=optimizer)
+                model.compile(loss= loss, optimizer=optimizer)
             else:
                 return ValueError('Unsupported Loss Function')
 
