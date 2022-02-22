@@ -8,9 +8,6 @@ from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.layers import Conv2D, Conv3D, Input, AveragePooling2D, \
     multiply, Dense, Dropout, Flatten, AveragePooling3D
 from tensorflow.python.keras.models import Model
-from custom_fit import CustomModel
-
-from losses import get_peaks
 
 
 class Attention_mask(tf.keras.layers.Layer):
@@ -23,7 +20,6 @@ class Attention_mask(tf.keras.layers.Layer):
     def get_config(self):
         config = super(Attention_mask, self).get_config()
         return config
-
 
 class TSM(tf.keras.layers.Layer):
     def call(self, x, n_frame, fold_div=3):
@@ -65,17 +61,18 @@ def TSM_Cov2D(x, n_frame, nb_filters=128, kernel_size=(3, 3), activation='tanh',
 # own layer???
 class ownLayer(tf.keras.layers.Layer):
     def call(self, x):
-        out = get_peaks(x)
+        out = self.get_peaks(x)
 
         return out
 
-    def get_peaks(y):
-        # y: (N,)
+    def get_peaks(self, y):
+        # y: (N,1)
         data_reshaped = tf.reshape(y, (1, -1, 1)) # (1, N, 1)
         max_pooled_in_tensor =  tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
         maxima = tf.equal(data_reshaped,max_pooled_in_tensor) # (1, N, 1)
         maxima = tf.cast(maxima, tf.float32)
         maxima = tf.squeeze(maxima) # (N,1)
+        maxima = tf.reshape(maxima, (-1,1))
         #peaks = tf.where(maxima) # now only the Peak Indices (A, 3)
         #
         # peaks = tf.reshape(peaks, (-1,)) # (A,1)
@@ -169,7 +166,7 @@ def TS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), d
     d10 = Dense(nb_dense, activation='tanh')(d9)
     d11 = Dropout(dropout_rate2)(d10)
     out = Dense(1)(d11)
-    model = CustomModel(inputs=[diff_input, rawf_input], outputs=out)
+    model = Model(inputs=[diff_input, rawf_input], outputs=out)
     return model
 
 #%% PTS_CAN --> Advanced TS_CAN...
@@ -210,9 +207,11 @@ def PTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), 
     d9 = Flatten()(d8)
     d10 = Dense(nb_dense, activation='tanh')(d9)
     d11 = Dropout(dropout_rate2)(d10)
-    out = Dense(1)(d11)
-    out_peaks = ownLayer()(out)
-    model = Model(inputs=[diff_input, rawf_input], outputs=[out, out_peaks])
+    out1 = Dense(1, name='output_1')(d11)
+    out_peaks = ownLayer()(out1)
+    out2 = Dense(1, name='output_2')(out_peaks)
+
+    model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out2])
     return model
 
 # %%  --> PhysNet mit AttentionModule

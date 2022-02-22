@@ -43,12 +43,17 @@ def predict_vitals(args):
     pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
     
     ##### ground truth data resampled  #######
-    if(str(sample_data_path).find("COHFACE")):
+    print("\n", sample_data_path)
+    print(str(sample_data_path).find("COHFACE"))
+    print(str(sample_data_path).find("UBFC-PHYS"))
+    if(str(sample_data_path).find("COHFACE") > 0):
         truth_path = args.video_path.replace(".avi", "_dataFile.hdf5")   # akutell für COHACE...
-    elif(str(sample_data_path).find("UBFC_PHYS")):
+    elif(str(sample_data_path).find("UBFC-PHYS") > 0):
+        print("OK")
         truth_path = args.video_path.replace("vid_", "") + "_dataFile.hdf5"
     else:
         return("Error in finding the ground truth signal...")
+    print(truth_path)
     gound_truth_file = h5py.File(truth_path, "r")
     pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
@@ -64,21 +69,21 @@ def predict_vitals(args):
 
      ########## Plot ##################
     plt.figure() #subplot(211)
-    plt.plot(pulse_pred, label='Prediction')
+    plt.plot(pulse_pred, "x", label='Prediction')
     plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
     plt.plot(peaks_pred, pulse_pred[peaks_pred], "o")
     plt.title('Pulse Prediction')
-    plt.plot(pulse_truth, label='ground truth')
+    plt.plot(pulse_truth, "o", label='ground truth')
     plt.legend()
 
     plt.figure()
     plt.subplot(211)
-    plt.plot(pulse_truth, label='Ground truth')
+    plt.plot(pulse_truth, "o", label='Ground truth')
     plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
     plt.ylabel("normalized Signal")
     plt.title('Ground truth')
     plt.subplot(212)
-    plt.plot(pulse_pred, label='Prediction')
+    plt.plot(pulse_pred, "x", label='Prediction')
     plt.plot(peaks_pred, pulse_pred[peaks_pred], "x")
     plt.title("Prediction")
     plt.ylabel("normalized Signal")
@@ -115,6 +120,7 @@ if __name__ == "__main__":
     predict_vitals(args)
 
 
-#python code/predict_vitals_new.py --video_path "E:\Databases\3)Testing\COHFACE\21\1\data.avi" --trained_model ./cv_0_epoch24_model.hdf5
+#python code/predict_vitals_new.py --video_path "D:\Databases\1)Training\COHFACE\1\1\data.avi" --trained_model ./cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
+#python code/predict_vitals_new.py --video_path "D:\Databases\1)Training\UBFC-PHYS\s1\vid_s1_T1.avi" --trained_model ./cv_0_epoch24_model.hdf5

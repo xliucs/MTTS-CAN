@@ -147,7 +147,7 @@ class DataGenerator(data_utils.Sequence):
                                                          apperance_data.shape[4]))
             output = (motion_data, apperance_data)
 
-        # new Peak MultiTask Temperal Shift CAN
+        # new Peak Temperal Shift CAN
         elif self.temporal == 'PTS_CAN':
             sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
@@ -161,18 +161,29 @@ class DataGenerator(data_utils.Sequence):
                 dysub = np.array(f1['pulse'])
                 dzsub = np.array(f1['peaklist'])
                 if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
-                  current_nframe = self.maxLen_Video
-                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
-                  dysub = dysub[0:self.maxLen_Video]
-                  dzsub = dzsub[0:self.maxLen_Video]
+                    current_nframe = self.maxLen_Video
+                    dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                    dysub = dysub[0:self.maxLen_Video]
+                    dzsub = dzsub[0:self.maxLen_Video]
+                    sigma = 4
                 else:
-                  current_nframe = dXsub.shape[0]
+                    sigma = 2
+                    current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label_y[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
                 temp = np.zeros(current_nframe, dtype=np.float32)
                 for i in dzsub:
-                    temp[i] = 1
-                label_z[index_counter:index_counter+current_nframe, 0] = dzsub # data Peaks
+                    mu = i
+                    min = i-sigma*3
+                    if min < 0:
+                        min = 0
+                    max = i+sigma*3
+                    if max > len(temp):
+                        max = len(temp)-1
+                    
+                    for j in range(min, max):
+                        temp[j] = gauss(j, sigma, mu)
+                label_z[index_counter:index_counter+current_nframe, 0] = temp # data Peaks
                 index_counter += current_nframe
             motion_data = data[:, :, :, :3]
             apperance_data = data[:, :, :, -3:]
@@ -345,3 +356,6 @@ def get_frame_sum(list_vid, maxLen_Video):
           frames_sum += shape[0]
         counter += 1
     return frames_sum
+
+def gauss(x, sigma, mu):
+    return math.exp(-(x - mu)**2 / (2 * sigma**2)) / (sigma * math.sqrt(2 * math.pi))

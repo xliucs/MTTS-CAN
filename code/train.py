@@ -13,7 +13,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 from xmlrpc.client import boolean
-from losses import negPearsonLoss, negPearsonLoss_onlyPeaks
+from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss
 import numpy as np
 import scipy.io
 import tensorflow as tf
@@ -70,7 +70,8 @@ parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
 parser.add_argument('-database', '--database_name', type=str, 
                     default="MIX", help='Which database')  
-parser.add_argument('-lo', '--loss_function', type=str, default="MSE") 
+parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE") 
+parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE") 
 parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
 parser.add_argument('-ml', '--maxFrames_video', type=int, default=2100, help="frames")   
 
@@ -166,7 +167,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             model = TS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
         elif args.temporal == 'PTS_CAN':
-            print('Using TS_CAN!')
+            print('Using PTS_CAN: with PeakLocation as Gaussian!')
             input_shape = (img_rows, img_cols, 3)
             model = PTS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
@@ -193,25 +194,42 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                                   nb_dense=args.nb_dense)
         else:
             raise ValueError('Unsupported Model Type!')
-        
+
         optimizer = adadelta_v2.Adadelta(learning_rate=args.lr)
         if args.temporal == 'MTTS_CAN' or args.temporal == 'MT_Hybrid_CAN' or args.temporal == 'MT_CAN_3D' or \
                 args.temporal == 'MT_CAN':
             losses = {"output_1": "mean_squared_error", "output_2": "mean_squared_error"}
             loss_weights = {"output_1": 1.0, "output_2": 1.0}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
+        
         elif args.temporal == 'PTS_CAN':
-            losses = {"output_1": "mean_squared_error", "output_2": "mean_squared_error"}
-            loss_weights = {"output_1": 1.0, "output_2": 1.0}
+            # output 1: rPPG Signal
+            if args.loss_function1 == "MSE":
+                loss1 = 'mean_squared_error'
+            elif args.loss_function1 == "NegPea":
+                loss1 = negPearsonLoss
+            elif args.loss_function1 == "Gauss_Peak":
+                raise NotImplementedError
+            # output 2: Gaussdistribution around peak locations
+            if args.loss_function2 == "MSE":
+                loss2 = 'mean_squared_error'
+            elif args.loss_function2 == "NegPea":
+                loss2 = negPearsonLoss
+                raise NotImplementedError
+            elif args.loss_function2 == "Gauss_Peak":
+                loss2 = gaussian_loss
+            losses = {"output_1": loss1, "output_2": loss2}
+            loss_weights = {"output_1": 0.5, "output_2": 0.5}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
+        
         else:
-            if args.loss_function == "MSE":
+            if args.loss_function1 == "MSE":
                 model.compile(loss='mean_squared_error', optimizer=optimizer)
-            elif args.loss_function == "negPea":
+            elif args.loss_function1 == "negPea":
                 print("negative Pearson Loss ")
                 loss = negPearsonLoss
                 model.compile(loss=loss, optimizer=optimizer)
-            elif args.loss_function == "negPea_Peak":
+            elif args.loss_function1 == "negPea_Peak":
                 print("negative Pearson Loss of the Peaks")
                 loss = negPearsonLoss_onlyPeaks
                 model.compile(loss= loss, optimizer=optimizer)

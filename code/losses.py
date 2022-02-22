@@ -9,7 +9,6 @@ import tensorflow.keras.backend as K
 
 # Negative Pearson Coefficient
 # x: truth rPPG    y: predicted rPPG
-@tf.function
 def negPearsonLoss(x,y):
     mean_x = tf.reduce_mean(x)
     mean_y = tf.reduce_mean(y)
@@ -29,7 +28,9 @@ def negPearsonLoss(x,y):
     return negPearson_coeff
 
 
-@tf.function
+def gaussian_loss(y_true, y_pred):
+    return -tf.reduce_sum(y_true*y_pred)
+
 def negPearsonLoss_onlyPeaks(y_true, y_pred):
     peaks_true = get_peaks(y_true)
     peaks_pred = get_peaks(y_pred)
