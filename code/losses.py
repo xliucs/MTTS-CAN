@@ -3,6 +3,7 @@
 # Currently implemented:
 # - Negative Pearson Coefficient
 
+from tkinter.tix import Y_REGION
 import tensorflow as tf
 
 import tensorflow.keras.backend as K
@@ -30,7 +31,8 @@ def negPearsonLoss(x,y):
 
 def gaussian_loss(y_true, y_pred):
     y_pred = tf.reshape(y_pred, (-1,))
-    return -tf.reduce_sum(tf.abs(y_true*y_pred))
+    y_true = tf.reshape(y_true, (-1,))
+    return -tf.reduce_sum(y_true*y_pred)
 
 def negPearsonLoss_onlyPeaks(y_true, y_pred):
     peaks_true = get_peaks(y_true)

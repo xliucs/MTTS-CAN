@@ -208,10 +208,9 @@ def PTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), 
     d10 = Dense(nb_dense, activation='tanh')(d9)
     d11 = Dropout(dropout_rate2)(d10)
     out1 = Dense(1, name='output_1')(d11)
-    out_peaks = ownLayer()(out1)
-    out2 = Dense(1, name='output_2',  use_bias=False)(out_peaks)
+    out_peaks = ownLayer(name='output_2')(out1)
 
-    model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out2])
+    model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out_peaks])
     return model
 
 # %%  --> PhysNet mit AttentionModule
