@@ -68,10 +68,10 @@ class ownLayer(tf.keras.layers.Layer):
     def get_peaks(self, y):
         # y: (N,1)
         data_reshaped = tf.reshape(y, (1, -1, 1)) # (1, N, 1)
-        max_pooled_in_tensor =  tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
-        maxima = tf.equal(data_reshaped,max_pooled_in_tensor) # (1, N, 1)
+        max_pooled_in_tensor = tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
+        maxima = tf.equal(data_reshaped, max_pooled_in_tensor) # (1, N, 1)
         maxima = tf.cast(maxima, tf.float32)
-        maxima = tf.squeeze(maxima) # (N,1)
+        #maxima = tf.squeeze(maxima) # (N,1)
         maxima = tf.reshape(maxima, (-1,1))
         #peaks = tf.where(maxima) # now only the Peak Indices (A, 3)
         #
@@ -209,7 +209,7 @@ def PTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), 
     d11 = Dropout(dropout_rate2)(d10)
     out1 = Dense(1, name='output_1')(d11)
     out_peaks = ownLayer()(out1)
-    out2 = Dense(1, name='output_2')(out_peaks)
+    out2 = Dense(1, name='output_2',  use_bias=False)(out_peaks)
 
     model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out2])
     return model

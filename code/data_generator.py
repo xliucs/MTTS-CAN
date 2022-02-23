@@ -165,19 +165,19 @@ class DataGenerator(data_utils.Sequence):
                     dXsub = dXsub[0:self.maxLen_Video, :,:,:]
                     dysub = dysub[0:self.maxLen_Video]
                     dzsub = dzsub[0:self.maxLen_Video]
-                    sigma = 4
+                    sigma = 2.6
                 else:
-                    sigma = 2
+                    sigma = 1.5
                     current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label_y[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
                 temp = np.zeros(current_nframe, dtype=np.float32)
                 for i in dzsub:
                     mu = i
-                    min = i-sigma*3
+                    min = int(i-sigma*3)
                     if min < 0:
                         min = 0
-                    max = i+sigma*3
+                    max = int(i+sigma*3)
                     if max > len(temp):
                         max = len(temp)-1
                     
