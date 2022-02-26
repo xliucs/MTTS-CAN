@@ -150,7 +150,6 @@ class DataGenerator(data_utils.Sequence):
         # new Peak Temperal Shift CAN
         elif self.temporal == 'PTS_CAN':
             sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
-            print(sum_frames_batch)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
             label_y = np.zeros((sum_frames_batch, 1), dtype=np.float32)
             label_z = np.zeros((sum_frames_batch, 1), dtype=np.float32)

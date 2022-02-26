@@ -264,7 +264,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                                                                     save_best_only=False, verbose=1)
         csv_logger = tf.keras.callbacks.CSVLogger(filename=cv_split_path + '_train_loss_log.csv')
         hb_callback = HeartBeat(training_generator, validation_generator, args, str(cv_split), checkpoint_folder)
-
+        
         # %% Model Training and Saving Results
         history = model.fit(x=training_generator, validation_data=validation_generator, epochs=args.nb_epoch, 
                     verbose=1, shuffle=True, callbacks=[csv_logger, save_best_callback, hb_callback], validation_freq=4)
@@ -306,7 +306,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         file.write("Name:  "), file.write(args.exp_name)
         file.write("\nModel:   "), file.write(args.temporal)
         file.write("\nBatch Size:   "), file.write(str(args.batch_size))
-        file.write("\nLoss Function:  "), file.write(args.loss_function)
+        file.write("\nLoss Function (output0):  "), file.write(args.loss_function1)
+        file.write("\nLoss Function (output1):  "), file.write(args.loss_function2)
         file.write("\nMax Frames Video: "), file.write(str(args.maxFrames_video))
         file.write("\nLearningrate:   "), file.write(str(args.lr))
         file.write("\nTrain Subjects:  "), file.write(str(subTrain))

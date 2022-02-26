@@ -120,6 +120,6 @@ if __name__ == "__main__":
     predict_vitals(args)
 
 
-#python code/predict_vitals.py --video_path "E:\Databases\3)Testing\COHFACE\22\0\data.avi" --trained_model "E:\Databases\4) Results\TS_CAN_UBFC_PHYS\cv_0_epoch23_model.hdf5"
+#python code/predict_vitals.py --video_path "D:\Databases\3)Testing\COHFACE\22\0\data.avi" --trained_model "E:\Databases\4) Results\TS_CAN_UBFC_PHYS\cv_0_epoch23_model.hdf5"
 #./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
