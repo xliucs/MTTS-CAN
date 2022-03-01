@@ -121,10 +121,10 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = 32
         elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
             args.batch_size = 12
-        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN' or 'PTS_CAN':
+        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN' or  args.temporal == 'PTS_CAN':
             args.batch_size = 16#32
         elif args.temporal == 'Hybrid_CAN' or args.temporal == 'MT_Hybrid_CAN':
-            args.batch_size = 16
+            args.batch_size = 4# 16
         else:
             raise ValueError('Unsupported Model Type!')
 

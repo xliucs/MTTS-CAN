@@ -1,5 +1,4 @@
-from scipy import signal
-import tensorflow as tf
+from msilib.schema import Error
 import numpy as np
 import scipy.io
 import sys
@@ -30,9 +29,9 @@ def predict_vitals(args):
     ts_can_MIX = os.path.join(args.trained_model, "TS_CAN_MIX_2GPU/cv_0_epoch24_model.hdf5")
     
     dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
-
+    print("PROCESSES")
     dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
-    dXsub = dXsub[:dXsub_len, :, :, :]
+    dXsub = dXsub[500:1800, :, :, :]
 
     model_COHFACE = TS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     model_COHFACE.load_weights(ts_can_COHFACE)
@@ -62,12 +61,12 @@ def predict_vitals(args):
 
     
     ##### ground truth data resampled  #######
-    if(str(sample_data_path).find("COHFACE")):
-        truth_path = args.video_path.replace(".avi", "_dataFile.hdf5")   # akutell für COHACE...
-    elif(str(sample_data_path).find("UBFC_PHYS")):
-        truth_path = args.video_path.replace("vid_", "") + "_dataFile.hdf5"
+    if(str(sample_data_path).find("COHFACE") >=0):
+        truth_path = args.video_path.replace(".avi", "_dataFile.hdf5")
+    elif(str(sample_data_path).find("UBFC-PHYS") >= 0):
+        truth_path = args.video_path.replace("vid_", "").replace(".avi","_dataFile.hdf5")
     else:
-        return("Error in finding the ground truth signal...")
+        raise ValueError("Error in finding the ground truth signal...")
     gound_truth_file = h5py.File(truth_path, "r")
     pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
@@ -87,34 +86,38 @@ def predict_vitals(args):
     peaks_truth = working_data_truth['peaklist']
 
      ########## Plot ##################
+    print("FIGURE")
     plt.figure() #subplot(211)
-    plt.plot(pulse_pred_COHFACE, label='Prediction COHFACE')
-    plt.plot(peaks_pred_COH, pulse_pred_COHFACE[peaks_pred_COH], "x")
-    plt.plot(pulse_pred_MIX, label='Prediction MIX')
-    plt.plot(peaks_pred_MIX, pulse_pred_MIX[peaks_pred_MIX], "x")
-    plt.plot(pulse_pred_UBFC_PHYS, label='Prediction UBFC_PHYS')
-    plt.plot(peaks_pred_UBFC, pulse_pred_UBFC_PHYS[peaks_pred_UBFC], "x")
+    plt.plot(pulse_pred_COHFACE, "--", color="k", linewidth=1, label='Prediction COHFACE')
+    plt.plot(peaks_pred_COH, pulse_pred_COHFACE[peaks_pred_COH], "x", color="k")
+    plt.plot(pulse_pred_MIX, ":",color="grey", linewidth=1.1,  label='Prediction MIX')
+    plt.plot(peaks_pred_MIX, pulse_pred_MIX[peaks_pred_MIX], "x", color="grey")
+    plt.plot(pulse_pred_UBFC_PHYS, "-.", color="silver", linewidth=1.1, label='Prediction UBFC-PHYS')
+    plt.plot(peaks_pred_UBFC, pulse_pred_UBFC_PHYS[peaks_pred_UBFC], "x", color="silver")
+    plt.ylabel("normalized Signal [a.u.]")
+    plt.xlabel("time (samples)")
 
-    plt.plot(peaks_truth, pulse_truth[peaks_truth], "o")
-    plt.title('Pulse Prediction')
-    plt.plot(pulse_truth, label='ground truth')
-    plt.legend()
-
-    
-    
-    plt.figure()
-    plt.subplot(211)
-    plt.plot(pulse_truth, label='Ground truth')
-    plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
-    plt.ylabel("normalized Signal")
-    plt.title('Ground truth')
-    plt.subplot(212)
-    plt.plot(pulse_pred_COHFACE, label='Prediction')
-    plt.plot(peaks_pred_COH, pulse_pred_COHFACE[peaks_pred_COH], "x")
-    plt.title("Prediction")
-    plt.ylabel("normalized Signal")
+    plt.plot(peaks_truth, pulse_truth[peaks_truth], "x", color="b")
+    plt.title('Example: Participant out of COHFACE database')
+    plt.plot(pulse_truth, "b",  label='ground truth')
     plt.legend()
     plt.show()
+
+    
+    
+    # plt.figure()
+    # plt.subplot(211)
+    # plt.plot(pulse_truth, label='Ground truth')
+    # plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
+    # plt.ylabel("normalized Signal")
+    # plt.title('Ground truth')
+    # plt.subplot(212)
+    # plt.plot(pulse_pred_COHFACE, label='Prediction')
+    # plt.plot(peaks_pred_COH, pulse_pred_COHFACE[peaks_pred_COH], "x")
+    # plt.title("Prediction")
+    # plt.ylabel("normalized Signal")
+    # plt.legend()
+    # plt.show()
 
     ########### IBI #############
     ibi_truth = working_data_truth['RR_list_cor']
@@ -132,22 +135,22 @@ def predict_vitals(args):
     print("HRV Pred UBFC:  ", measures_pred_UBFC)
     ####### Logging #############
     # neuer Ordner für Tests
-    file = open(str(sample_data_path).replace(".avi", "comparisonALL_result.txt"),"w")
-    file.write("LogFile\n\n")
-    file.write("\nCOHFACE:")
-    file.write("\nIBI: "), file.write(str(ibi_pred_COH))
-    file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred_COH))
+    # file = open(str(sample_data_path).replace(".avi", "comparisonALL_result.txt"),"w")
+    # file.write("LogFile\n\n")
+    # file.write("\nCOHFACE:")
+    # file.write("\nIBI: "), file.write(str(ibi_pred_COH))
+    # file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred_COH))
 
-    file.write("\nMIX:")
-    file.write("\nIBI: "), file.write(str(ibi_pred_MIX))
-    file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred_MIX))
+    # file.write("\nMIX:")
+    # file.write("\nIBI: "), file.write(str(ibi_pred_MIX))
+    # file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred_MIX))
 
-    file.write("\nUBFC-PHYS:")
-    file.write("\nIBI: "), file.write(str(ibi_pred_UBFC))
-    file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred_UBFC))
+    # file.write("\nUBFC-PHYS:")
+    # file.write("\nIBI: "), file.write(str(ibi_pred_UBFC))
+    # file.write("\nHR and HRVfeatures: "), file.write(str(measures_pred_UBFC))
 
-    file.write("\n\n\nGround truth infos!")
-    file.write("\nHR and HRV features: "), file.write(str(measures_truth))
+    # file.write("\n\n\nGround truth infos!")
+    # file.write("\nHR and HRV features: "), file.write(str(measures_truth))
 
 if __name__ == "__main__":
 
@@ -161,6 +164,7 @@ if __name__ == "__main__":
     predict_vitals(args)
 
 
-#python code/predict_vitals_comparison.py --video_path "E:\Databases\3)Testing\COHFACE\21\0\data.avi" --trained_model "E:\Databases\4)Results\"
+#python code/predict_vitals_comparison.py --video_path "D:/Databases/1)Training/COHFACE/5/1/data.avi" --trained_model "D:\Databases\4)Results\"
 #./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
+#python code/predict_vitals_comparison.py --video_path "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi" --trained_model "D:\Databases\4)Results\"

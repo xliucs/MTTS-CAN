@@ -139,6 +139,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
     plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "o")
     plt.title('PPG prediction with ground truth signal')
     plt.ylabel("normalized Signal [a.u.]")
+    plt.xlabel("time (samples)")
     plt.plot(pulse_truth[400:700], label='ground truth')
     plt.legend()
     plt.savefig(nameStr + "_both")
@@ -154,6 +155,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
     plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "x")
     plt.title("Predicted rPPG")
     plt.ylabel("normalized Signal [a.u.]")
+    plt.xlabel("time (samples)")
     plt.legend()
     plt.savefig(nameStr)
 
@@ -224,13 +226,15 @@ if __name__ == "__main__":
         test_names.append(split[len(split)-1])
     batch_size = 8
     video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi","D:/Databases/1)Training/COHFACE/10/2/data.avi",
-    "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi",
+    "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi", "D:/Databases/1)Training/COHFACE/6/0/data.avi",
+    "D:/Databases/1)Training/UBFC-PHYS/s13/vid_s13_T3.avi",
+    
     "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T3.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
-    "D:/Databases/2)Validation/COHFACE/38/0/data.avi"]
-    save_dir = "D:/Databases/5)Evaluation/EV2"
+    "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
+    "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
+    save_dir = "D:/Databases/5)Evaluation/EV3"
     print("Models: ", test_names)
-    test_names= ['Hybrid_CAN_MIX', 'PTS_CAN_MIX_Gauss', 'TS_CAN_COHFACE_2GPU', 'TS_CAN_MIX_2GPU', 'TS_CAN_MIX_negPea', 'TS_CAN_UBFC_PHYS']
-    print("Models: ", test_names)
+   
     for test_name in test_names:
         print("Current Modelname: ", test_name)
         # neuer Ordner für Tests
@@ -245,9 +249,11 @@ if __name__ == "__main__":
 
         if str(test_name).find("3D_CAN") >=0:
             model_name = "3D_CAN"
+            continue
             
         elif str(test_name).find("Hybrid_CAN") >= 0:
             model_name = "Hybrid_CAN"
+            continue
         elif str(test_name).find("TS_CAN") >= 0:
             model_name = "TS_CAN"
         elif str(test_name).find("PTS_CAN") >= 0:
@@ -255,6 +261,7 @@ if __name__ == "__main__":
         else:
             if str(test_name).find("CAN") >= 0:
                 model_name = "CAN"
+                continue
             else: 
                 raise Error("Model not found...")
         
