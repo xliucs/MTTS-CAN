@@ -29,9 +29,9 @@ def predict_vitals(args):
     ts_can_MIX = os.path.join(args.trained_model, "TS_CAN_MIX_2GPU/cv_0_epoch24_model.hdf5")
     
     dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
-    print("PROCESSES")
+    print("PROCESSES", fs)
     dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
-    dXsub = dXsub[500:1800, :, :, :]
+    dXsub = dXsub[:dXsub_len, :, :, :]
 
     model_COHFACE = TS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     model_COHFACE.load_weights(ts_can_COHFACE)
@@ -98,7 +98,7 @@ def predict_vitals(args):
     plt.xlabel("time (samples)")
 
     plt.plot(peaks_truth, pulse_truth[peaks_truth], "x", color="b")
-    plt.title('Example: Participant out of COHFACE database')
+    plt.title('Example: Participant out of UBFC-PHYS database')
     plt.plot(pulse_truth, "b",  label='ground truth')
     plt.legend()
     plt.show()
@@ -165,6 +165,4 @@ if __name__ == "__main__":
 
 
 #python code/predict_vitals_comparison.py --video_path "D:/Databases/1)Training/COHFACE/5/1/data.avi" --trained_model "D:\Databases\4)Results\"
-#./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
-#./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
-#python code/predict_vitals_comparison.py --video_path "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi" --trained_model "D:\Databases\4)Results\"
+#python code/predict_vitals_comparison.py --video_path "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi" --trained_model "D:\Databases\4)Results\actual_models"

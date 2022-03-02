@@ -50,10 +50,9 @@ class DataGenerator(data_utils.Sequence):
         'Generates data containing batch_size samples'
 
         if self.temporal == 'CAN_3D':
-            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
+            sum_frames_batch = get_frame_sum_3D_Hybrid(list_video_temp, self.maxLen_Video)
             data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1],self.frame_depth,  6), dtype=np.float32)
             label = np.zeros((sum_frames_batch, self.frame_depth), dtype=np.float32)
-            num_window = int(sum_frames_batch/ self.frame_depth)
             index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
@@ -62,7 +61,7 @@ class DataGenerator(data_utils.Sequence):
                 if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
                   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
                   dysub = dysub[0:self.maxLen_Video]
-                  
+                num_window = int(dXsub.shape[0]) -(self.frame_depth+1)  
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
                 tempY = np.array([dysub[f:f + self.frame_depth] #(491,10,1) - (169, 10, 1)
@@ -70,8 +69,9 @@ class DataGenerator(data_utils.Sequence):
                 tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
                 tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
                 tempY = np.reshape(tempY, (num_window, self.frame_depth)) # (169, 10)
-                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX # altes
-                label[index*num_window:(index+1)*num_window, :] = tempY
+                data[index_counter: index_counter + num_window, :, :, :, :] = tempX
+                label[index_counter: index_counter + num_window, :] = tempY
+                index_counter += num_window
 
             motion_data = data[:, :, :, :, :3]
             apperance_data = data[:, :, :, :, -3:]
@@ -208,11 +208,11 @@ class DataGenerator(data_utils.Sequence):
        
 
         elif self.temporal == 'Hybrid_CAN':
-            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
-            num_window = int(sum_frames_batch/ self.frame_depth)
+            sum_frames_batch = get_frame_sum_3D_Hybrid(list_video_temp, self.maxLen_Video)
             data = np.zeros((num_window*len(list_video_temp), self.dim[0], self.dim[1], self.frame_depth, 6),
                             dtype=np.float32)
             label = np.zeros((num_window*len(list_video_temp), self.frame_depth), dtype=np.float32)
+            index_counter = 0
             for index, temp_path in enumerate(list_video_temp):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
@@ -220,6 +220,7 @@ class DataGenerator(data_utils.Sequence):
                 if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
                   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
                   dysub = dysub[0:self.maxLen_Video]
+                num_window = int(dXsub.shape[0]) -(self.frame_depth+1)  
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
                 tempY = np.array([dysub[f:f + self.frame_depth] # (169, 10, 1)
@@ -227,8 +228,9 @@ class DataGenerator(data_utils.Sequence):
                 tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
                 tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
                 tempY = np.reshape(tempY, (num_window, self.frame_depth)) # (169, 10)
-                data[index*num_window:(index+1)*num_window, :, :, :, :] = tempX
-                label[index*num_window:(index+1)*num_window, :] = tempY
+                data[index_counter: index_counter + num_window, :, :, :, :] = tempX
+                label[index_counter: index_counter + num_window, :] = tempY
+                index_counter += num_window
             motion_data = data[:, :, :, :, :3]
             apperance_data = np.average(data[:, :, :, :, -3:], axis=-2)
             output = (motion_data, apperance_data)
@@ -354,6 +356,19 @@ def get_frame_sum(list_vid, maxLen_Video):
           frames_sum += maxLen_Video
         else: 
           frames_sum += shape[0]
+        counter += 1
+    return frames_sum
+
+def get_frame_sum_3D_Hybrid(list_vid, maxLen_Video):
+    frames_sum = 0
+    counter = 0
+    for vid in list_vid:
+        hf = h5py.File(vid, 'r')
+        shape = hf['data'].shape
+        if shape[0] > maxLen_Video:
+          frames_sum += maxLen_Video - 9
+        else: 
+          frames_sum += shape[0] - 9
         counter += 1
     return frames_sum
 

@@ -1,8 +1,6 @@
 from aifc import Error
-from unicodedata import name
 import numpy as np
 import scipy.io
-from sklearn.neighbors import radius_neighbors_graph
 import xlsxwriter
 from model import CAN, CAN_3D, PTS_CAN, TS_CAN, Hybrid_CAN
 import h5py
@@ -45,15 +43,15 @@ def predict_vitals(workBook, test_name, model_name, video_path):
     frame_depth = 10
     batch_size = 100
     try:
-        model_checkpoint = os.path.join("D:/Databases/4)Results", test_name, "cv_0_epoch24_model.hdf5")
+        model_checkpoint = os.path.join("D:/Databases/4)Results/actual_models", test_name, "cv_0_epoch24_model.hdf5")
     except:
-        model_checkpoint = os.path.join("D:/Databases/4)Results", test_name, "cv_0_epoch23_model.hdf5")
+        model_checkpoint = os.path.join("D:/Databases/4)Results/actual_models", test_name, "cv_0_epoch23_model.hdf5")
     batch_size = batch_size
     sample_data_path = video_path
     print("path:  ",sample_data_path)
 
     dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
-    print('dXsub shape', dXsub.shape)
+    print('dXsub shape', dXsub.shape, "fs: ", fs)
 
     dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
     dXsub = dXsub[:dXsub_len, :, :, :]
@@ -73,6 +71,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
         model = PTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     else: 
         raise NotImplementedError
+    model.summary()
     model.load_weights(model_checkpoint)
     if model_name == "3D_CAN":
         yptest = model.predict((dXsub[:, :, :,: , :3], dXsub[:, :, :, : , -3:]), batch_size=batch_size, verbose=1)
@@ -142,6 +141,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
     plt.xlabel("time (samples)")
     plt.plot(pulse_truth[400:700], label='ground truth')
     plt.legend()
+    plt.show()
     plt.savefig(nameStr + "_both")
 
     plt.figure()
@@ -216,10 +216,8 @@ def predict_vitals(workBook, test_name, model_name, video_path):
         worksheet.write(15, col, val)
         col += 1
    
-
-
 if __name__ == "__main__":
-    dir_names = glob("D:/Databases/4)Results/*")
+    dir_names = glob("D:/Databases/4)Results/actual_models/*")
     test_names = []
     for dir in dir_names:
         split = dir.split("\\")
@@ -229,10 +227,16 @@ if __name__ == "__main__":
     "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi", "D:/Databases/1)Training/COHFACE/6/0/data.avi",
     "D:/Databases/1)Training/UBFC-PHYS/s13/vid_s13_T3.avi",
     
-    "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T3.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
+    "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
     "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
     "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
-    save_dir = "D:/Databases/5)Evaluation/EV3"
+    
+    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
+    
+    "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
+    save_dir = "D:/Databases/5)Evaluation/Test"
+
+    test_names = [ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
     print("Models: ", test_names)
    
     for test_name in test_names:
@@ -249,22 +253,18 @@ if __name__ == "__main__":
 
         if str(test_name).find("3D_CAN") >=0:
             model_name = "3D_CAN"
-            continue
-            
         elif str(test_name).find("Hybrid_CAN") >= 0:
             model_name = "Hybrid_CAN"
-            continue
         elif str(test_name).find("TS_CAN") >= 0:
             model_name = "TS_CAN"
         elif str(test_name).find("PTS_CAN") >= 0:
             model_name = "PTS_CAN"
+            continue
         else:
             if str(test_name).find("CAN") >= 0:
                 model_name = "CAN"
-                continue
             else: 
                 raise Error("Model not found...")
-        
         for vid in video_path:
             predict_vitals(workbook, test_name, model_name, vid)
         workbook.close()
