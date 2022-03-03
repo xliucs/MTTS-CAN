@@ -64,9 +64,9 @@ def dataSet_preprocess(vid, name):
         if os.path.exists(str(vid).replace(".avi", "_data.hdf5")):
             os.remove(str(vid).replace(".avi", "_data.hdf5"))
             print("deleted")
-        if os.path.exists(str(vid).replace(".avi", "_dataFile.hdf5")):
-            os.remove(str(vid).replace(".avi", "_dataFile.hdf5"))
-            print("deleted")
+        if os.path.exists(str(vid).replace(".avi", "_dataFile.hdf5").replace('vid_', '')):
+            os.rename(str(vid).replace(".avi", "_dataFile.hdf5").replace('vid_', ''), str(vid).replace(".avi", "_dataFile.hdf5").replace('vid_', 'ALL_'))
+            print("renamed")
         if os.path.exists(str(vid).replace(".avi", "_dataFileAll.hdf5").replace('vid_', '')):
             os.remove(str(vid).replace(".avi", "_dataFileAll.hdf5").replace('vid_', ''))
             print("deleted")
