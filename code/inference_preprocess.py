@@ -18,8 +18,8 @@ def preprocess_raw_video(videoFilePath, dim=36):
     vidObj = cv2.VideoCapture(videoFilePath)
     
     totalFrames = int(vidObj.get(cv2.CAP_PROP_FRAME_COUNT)) # get total frame size
-    fps = int(vidObj.get(cv2.CAP_PROP_FPS))
-    print("fps:   ", fps)
+    fps = vidObj.get(cv2.CAP_PROP_FPS)
+    #print("fps:   ", fps)
     Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)
     height = vidObj.get(cv2.CAP_PROP_FRAME_HEIGHT)
     width = vidObj.get(cv2.CAP_PROP_FRAME_WIDTH)

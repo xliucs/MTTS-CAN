@@ -18,7 +18,7 @@ import heartpy as hp
 
 def prepare_3D_CAN(dXsub):
     frame_depth = 10
-    num_window = int(len(dXsub)/ frame_depth)
+    num_window = int(dXsub.shape[0]) - frame_depth + 1
     tempX = np.array([dXsub[f:f + frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
                     for f in range(num_window)])
     tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
@@ -27,7 +27,7 @@ def prepare_3D_CAN(dXsub):
 
 def prepare_Hybrid_CAN(dXsub):
     frame_depth = 10
-    num_window = int(len(dXsub)/ frame_depth)
+    num_window = int(dXsub.shape[0]) - frame_depth + 1
     tempX = np.array([dXsub[f:f + frame_depth, :, :, :] # (169, 10, 36, 36, 6)
                         for f in range(num_window)])
     tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
@@ -71,7 +71,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
         model = PTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     else: 
         raise NotImplementedError
-    model.summary()
+
     model.load_weights(model_checkpoint)
     if model_name == "3D_CAN":
         yptest = model.predict((dXsub[:, :, :,: , :3], dXsub[:, :, :, : , -3:]), batch_size=batch_size, verbose=1)
@@ -141,7 +141,6 @@ def predict_vitals(workBook, test_name, model_name, video_path):
     plt.xlabel("time (samples)")
     plt.plot(pulse_truth[400:700], label='ground truth')
     plt.legend()
-    plt.show()
     plt.savefig(nameStr + "_both")
 
     plt.figure()
@@ -231,26 +230,16 @@ if __name__ == "__main__":
     "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
     "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
     
-    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
+    # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
     
-    "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
-    save_dir = "D:/Databases/5)Evaluation/Test"
+    # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
+    save_dir = "D:/Databases/5)Evaluation/Comparison_Databases"
 
-    test_names = [ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
+    test_names = ["TS_CAN_UBFC_new"]#[ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
     print("Models: ", test_names)
    
     for test_name in test_names:
         print("Current Modelname: ", test_name)
-        # neuer Ordner für Tests
-        os.chdir(save_dir)
-        try:
-            os.makedirs(str(test_name))
-        except:
-            print("Directory exists...")
-        save_path = os.path.join(save_dir, str(test_name))
-        os.chdir(save_path)
-        workbook = xlsxwriter.Workbook(test_name + ".xlsx")
-
         if str(test_name).find("3D_CAN") >=0:
             model_name = "3D_CAN"
         elif str(test_name).find("Hybrid_CAN") >= 0:
@@ -265,6 +254,15 @@ if __name__ == "__main__":
                 model_name = "CAN"
             else: 
                 raise Error("Model not found...")
+        # neuer Ordner für Tests
+        os.chdir(save_dir)
+        try:
+            os.makedirs(str(test_name))
+        except:
+            print("Directory exists...")
+        save_path = os.path.join(save_dir, str(test_name))
+        os.chdir(save_path)
+        workbook = xlsxwriter.Workbook(test_name + ".xlsx")
         for vid in video_path:
             predict_vitals(workbook, test_name, model_name, vid)
         workbook.close()
