@@ -20,7 +20,7 @@ model = PTS_CAN(10, 32, 64, (36,36,3),
                            dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128)
 training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
                                            batch_size=4, frame_depth=10,
-                                           temporal="PTS_CAN", respiration=False, database_name="MIX")
+                                           temporal="PTS_CAN", respiration=False, database_name="MIX", time_error_loss=True)
 
 inp = model.input   # input placeholder
 model.summary()

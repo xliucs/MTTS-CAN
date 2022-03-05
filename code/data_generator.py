@@ -16,7 +16,7 @@ from tensorflow.python.keras.utils import data_utils
 class DataGenerator(data_utils.Sequence):
     'Generates data for Keras'
     def __init__(self, paths_of_videos, maxLen_Video, dim, batch_size=32, frame_depth=10,
-                 shuffle=True, temporal=True, respiration=0, database_name = None):
+                 shuffle=True, temporal=True, respiration=0, database_name = None, time_error_loss=False):
         self.dim = dim
         self.batch_size = batch_size
         self.paths_of_videos = paths_of_videos
@@ -26,6 +26,7 @@ class DataGenerator(data_utils.Sequence):
         self.frame_depth = frame_depth
         self.respiration = respiration
         self.database_name = database_name
+        self.time_error_loss = time_error_loss
         self.on_epoch_end()
 
     def __len__(self): 
@@ -46,7 +47,7 @@ class DataGenerator(data_utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, list_video_temp):
+    def data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
 
         if self.temporal == 'CAN_3D':
@@ -58,9 +59,9 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
-                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
-                  dysub = dysub[0:self.maxLen_Video]
+                # if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
+                #   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                #   dysub = dysub[0:self.maxLen_Video]
                 num_window = int(dXsub.shape[0]) -(self.frame_depth+1)  
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
@@ -91,12 +92,12 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
-                  current_nframe = self.maxLen_Video
-                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
-                  dysub = dysub[0:self.maxLen_Video]
-                else:
-                  current_nframe = dXsub.shape[0]
+                # if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
+                #   current_nframe = self.maxLen_Video
+                #   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                #   dysub = dysub[0:self.maxLen_Video]
+                # else:
+                current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
                 index_counter += current_nframe
@@ -119,12 +120,12 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
-                  current_nframe = self.maxLen_Video
-                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
-                  dysub = dysub[0:self.maxLen_Video]
-                else:
-                  current_nframe = dXsub.shape[0]
+                # if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
+                #   current_nframe = self.maxLen_Video
+                #   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                #   dysub = dysub[0:self.maxLen_Video]
+                # else:
+                current_nframe = dXsub.shape[0]
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
                 index_counter += current_nframe
@@ -160,29 +161,20 @@ class DataGenerator(data_utils.Sequence):
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
                 dzsub = np.array(f1['peaklist'])
-                if dXsub.shape[0] > self.maxLen_Video: # only 1 min videos
-                    current_nframe = self.maxLen_Video
-                    dXsub = dXsub[0:self.maxLen_Video, :,:,:]
-                    dysub = dysub[0:self.maxLen_Video]
-                    dzsub = dzsub[0:self.maxLen_Video]
-                    sigma = 2.6
-                else:
-                    sigma = 1.5
+                if dXsub.shape[0] > self.maxLen_Video: # UBFC-PHYS
                     current_nframe = dXsub.shape[0]
+                    sigma = 2.6
+                    fps = 35.138
+                else: #COHFACE
+                    current_nframe = dXsub.shape[0]
+                    sigma = 1.5
+                    fps = 20
                 data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
                 label_y[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
-                temp = np.zeros(current_nframe, dtype=np.float32)
-                for i in dzsub:
-                    mu = i
-                    min = int(i-sigma*3)
-                    if min < 0:
-                        min = 0
-                    max = int(i+sigma*3)
-                    if max > len(temp):
-                        max = len(temp)-1
-                    
-                    for j in range(min, max):
-                        temp[j] = gauss(j, sigma, mu)
+                if(self.time_error_loss == False):
+                    temp = gauss_loss_dataGenerator(current_nframe, dzsub, sigma)
+                else:
+                    temp = time_error_loss_dataGenerator(current_nframe, dzsub, fps)
                 label_z[index_counter:index_counter+current_nframe, 0] = temp # data Peaks
                 index_counter += current_nframe
             motion_data = data[:, :, :, :3]
@@ -217,9 +209,9 @@ class DataGenerator(data_utils.Sequence):
                 f1 = h5py.File(temp_path, 'r')
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
-                if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
-                  dXsub = dXsub[0:self.maxLen_Video, :,:,:]
-                  dysub = dysub[0:self.maxLen_Video]
+                # if dXsub.shape[0] > self.maxLen_Video: # only 30 sek videos
+                #   dXsub = dXsub[0:self.maxLen_Video, :,:,:]
+                #   dysub = dysub[0:self.maxLen_Video]
                 num_window = int(dXsub.shape[0]) -(self.frame_depth+1)  
                 tempX = np.array([dXsub[f:f + self.frame_depth, :, :, :] # (169, 10, 36, 36, 6)
                                   for f in range(num_window)])
@@ -371,6 +363,46 @@ def get_frame_sum_3D_Hybrid(list_vid, maxLen_Video):
           frames_sum += shape[0] - 9
         counter += 1
     return frames_sum
+
+def gauss_loss_dataGenerator(current_nframe, dzsub, sigma):
+    temp = np.zeros(current_nframe, dtype=np.float32)
+    for i in dzsub:
+        mu = i
+        min = int(i-sigma*3)
+        if min < 0:
+            min = 0
+        max = int(i+sigma*3)
+        if max > len(temp):
+            max = len(temp)-1
+        
+        for j in range(min, max):
+            temp[j] = gauss(j, sigma, mu)
+    return temp
+
+def time_error_loss_dataGenerator(current_nframe, dzsub, fps):
+    temp = np.zeros(current_nframe, dtype=np.float32)
+    m = 1/fps
+    for i in range(0, len(dzsub)):
+        peak_1 = dzsub[i]
+        if(i-1 >= 0):
+            peak_0 = dzsub[i-1]
+            min = round((peak_1 - peak_0)/2) + peak_0 + 1
+            for j in range(min, peak_1+1):
+                temp[j] = m*(peak_1 - j)
+        elif(i-1 == -1):
+            min = 0
+            for j in range(min, peak_1+1):
+                temp[j] = m*(peak_1 - j)
+        if(i+1 < len(dzsub)):
+            peak_2 = dzsub[i+1]
+            max = round((peak_2 - peak_1)/2) + peak_1
+            for j in range(peak_1, max+1):
+                temp[j] = m*(j-peak_1)
+        elif(i+1 == len(dzsub)):
+            max = len(temp)-1
+            for j in range(peak_1, max+1):
+                temp[j] = m*(j-peak_1)
+    return temp
 
 def gauss(x, sigma, mu):
     return math.exp(-(x - mu)**2 / (2 * sigma**2)) / (sigma * math.sqrt(2 * math.pi))

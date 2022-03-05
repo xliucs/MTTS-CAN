@@ -13,7 +13,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 from xmlrpc.client import boolean
-from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss
+from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss, time_error_loss
 import numpy as np
 import scipy.io
 import tensorflow as tf
@@ -73,7 +73,7 @@ parser.add_argument('-database', '--database_name', type=str,
 parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE") 
 parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE") 
 parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
-parser.add_argument('-ml', '--maxFrames_video', type=int, default=2100, help="frames")   
+parser.add_argument('-ml', '--maxFrames_video', type=int, default=1900, help="frames")
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -167,7 +167,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             model = TS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
         elif args.temporal == 'PTS_CAN':
-            print('Using PTS_CAN: with PeakLocation as Gaussian!')
+            print('Using PTS_CAN: with PeakLocation!')
             input_shape = (img_rows, img_cols, 3)
             model = PTS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
@@ -218,6 +218,9 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                 raise NotImplementedError
             elif args.loss_function2 == "Gauss_Peak":
                 loss2 = gaussian_loss
+            elif args.loss_function2 == "time_Error":
+                loss2 = time_error_loss
+                   
             losses = {"output_1": loss1, "output_2": loss2}
             loss_weights = {"output_1": 0.5, "output_2": 0.5}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
@@ -239,13 +242,18 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         print('learning rate: ', args.lr)
         print('batch size: ', args.batch_size)
 
+        if args.loss_function2 == "time_Error":
+            timeError = True
+        else: 
+            timeError = False
+
         # %% Create data genener
         training_generator = DataGenerator(path_of_video_tr, maxLen_video, (img_rows, img_cols),
                                            batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                           temporal=args.temporal, respiration=args.respiration, database_name=args.database_name)
+                                           temporal=args.temporal, respiration=args.respiration, database_name=args.database_name, time_error_loss=timeError)
         validation_generator = DataGenerator(path_of_video_test, maxLen_video, (img_rows, img_cols),
                                              batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                             temporal=args.temporal, respiration=args.respiration, database_name=args.database_name)
+                                             temporal=args.temporal, respiration=args.respiration, database_name=args.database_name, time_error_loss=timeError)
       
 
         # %%  Checkpoint Folders
