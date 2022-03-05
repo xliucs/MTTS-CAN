@@ -344,10 +344,10 @@ def get_frame_sum(list_vid, maxLen_Video):
     for vid in list_vid:
         hf = h5py.File(vid, 'r')
         shape = hf['data'].shape
-        if shape[0] > maxLen_Video:
-          frames_sum += maxLen_Video
-        else: 
-          frames_sum += shape[0]
+        # if shape[0] > maxLen_Video:
+        #   frames_sum += maxLen_Video
+        # else: 
+        frames_sum += shape[0]
         counter += 1
     return frames_sum
 
