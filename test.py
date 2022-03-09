@@ -112,11 +112,8 @@ for index in model_output:
     binary[index] = 1
 
 mult = binary * temp
-mult2 = mult/0.1
 sum = np.sum(mult)
-sum2 = np.sum(mult2)
-
-print(sum * 1/20)
+print(sum)
 
 
 plt.plot(temp)

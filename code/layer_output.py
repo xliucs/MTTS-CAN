@@ -1,5 +1,6 @@
 
 
+import os
 from sklearn.preprocessing import MinMaxScaler
 from model import PTS_CAN, TS_CAN
 from tensorflow import keras
@@ -24,21 +25,23 @@ training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
 
 inp = model.input   # input placeholder
 model.summary()
+model_checkpoint = os.path.join("D:/Databases/4)Results/actual_models/TS_CAN_MIX_2GPU/cv_0_epoch24_model.hdf5")
+model.load_weights(model_checkpoint)
 #outputs = [layer.output for layer in model.layers]          # all layer outputs
 #functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
 
 # Testing
 test = training_generator.data_generation(path_of_video_tr) 
-output = model(test, training=True)
+output = model(test)
 print(output[1])
 plt.figure()
 plt.subplot(211)
 plt.title('Predicted signal example')
-plt.plot(output[0][100:500], label='output 0')
+plt.plot(output[0][100:500], label='output 1')
 plt.ylabel("rPPG [a.u.]")
 plt.legend(loc="upper right")
 plt.subplot(212)
-plt.plot(output[1][100:500], label='output 1')
+plt.plot(output[1][100:500], label='output 2')
 #plt.ylabel("[a.u.]")
 plt.legend(loc="upper right")
 plt.show()
@@ -46,11 +49,11 @@ plt.show()
 plt.figure()
 plt.subplot(211)
 plt.title('Ground truth example')
-plt.plot(test[1][0][100:500], label='label 0')
+plt.plot(test[1][0][100:500], label='truth data 1')
 plt.ylabel("rPPG [a.u.]")
 plt.legend(loc="upper right")
 plt.subplot(212)
-plt.plot(test[1][1][100:500], label='label 1')
+plt.plot(test[1][1][100:500], label='truth data 2')
 plt.xlabel("time (samples)")
 plt.legend(loc="upper right")
 plt.show()

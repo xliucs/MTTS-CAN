@@ -1,4 +1,5 @@
 import glob
+import itertools
 import os
 
 import h5py
@@ -92,9 +93,52 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
         print("not implemented yet.")
     return final
 
-def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
-    final = []
+def sort_dataFile_list_(data_dir, subTrain, database_name, trainMode):
     if database_name == "UBFC_PHYS":
+        final = dataFiles_UBFC_PHYS(data_dir, subTrain, trainMode, mode=1)
+        final = list(itertools.chain(*final))
+    elif database_name == "COHFACE":
+        taskList = [0, 1, 2]
+        final = dataFile_COHFACE(data_dir, taskList, subTrain, trainMode)
+        final = list(itertools.chain(*final))
+    elif database_name == "MIX":
+        for database in subTrain.keys():
+            final = []
+            if(str(database).find("UBFC") >= 0):
+                finalPart1  = dataFiles_UBFC_PHYS(data_dir, subTrain[database], trainMode, mode=0)
+                finalPart1 = list(itertools.chain(*finalPart1))
+            elif str(database).find("COHFACE") >= 0:
+                taskList = [0, 1, 2]
+                finalPart2 = dataFile_COHFACE(data_dir, taskList, subTrain[database], trainMode)
+                finalPart2 = list(itertools.chain(*finalPart2))
+            else:
+                raise NotImplementedError
+        final = finalPart1 + finalPart2
+    else: 
+        print("not implemented yet.")
+    return final
+
+def dataFile_COHFACE(data_dir, taskList, subTrain, train):
+    final = []
+    if train:
+        for p in subTrain:
+            for t in taskList:
+                x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE', str(p), str(t), '*dataFile.hdf5'))
+                x = sorted(x)
+                    #x = sorted(x, key=take_last_ele)
+                final.append(x)
+    else:
+         for p in subTrain:
+            for t in taskList:
+                x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), '*dataFile.hdf5'))
+                x = sorted(x)
+                    #x = sorted(x, key=take_last_ele)
+                final.append(x)
+    return final
+
+def dataFiles_UBFC_PHYS(data_dir, subTrain, train, mode):
+    final = []
+    if mode == 1:
         if train:
             for p in subTrain:
                 x = glob.glob(os.path.join(data_dir, '1)Training/UBFC-PHYS/s' + str(p), "s" + str(p) + "*"))
@@ -102,35 +146,24 @@ def sort_dataFile_list_(data_dir, taskList, subTrain, database_name, train):
                 #x = sorted(x, key=take_last_ele)
                 final.append(x)
         else:
-           for p in subTrain:
+            for p in subTrain:
                 x = glob.glob(os.path.join(data_dir, '2)Validation/UBFC-PHYS/s' + str(p), "s" + str(p) + "*"))
                 x = sorted(x)
                 #x = sorted(x, key=take_last_ele)
                 final.append(x)
-
-    elif database_name == "COHFACE":
+    else:
         if train:
             for p in subTrain:
-                for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, '1)Training/COHFACE', str(p), str(t), '*dataFile.hdf5'))
-                    x = sorted(x)
-                    #x = sorted(x, key=take_last_ele)
-                    final.append(x)
-        else:
-             for p in subTrain:
-                for t in taskList:
-                    x = glob.glob(os.path.join(data_dir, '2)Validation/COHFACE/', str(p), str(t), '*dataFile.hdf5'))
-                    x = sorted(x)
-                    #x = sorted(x, key=take_last_ele)
-                    final.append(x)
-    elif database_name == "MIX":
-        for database in subTrain.keys():
-            for subj in subTrain[database]:
-                x = glob.glob(os.path.join(database,subj, "**","*dataFile.hdf5"),recursive=True)
+                x = glob.glob(os.path.join(data_dir, '1)Training/UBFC-PHYS/' + str(p), str(p) + "*"))
+                x = sorted(x)
+                #x = sorted(x, key=take_last_ele)
                 final.append(x)
-        
-    else: 
-        print("not implemented yet.")
+        else:
+            for p in subTrain:
+                x = glob.glob(os.path.join(data_dir, '2)Validation/UBFC-PHYS/' + str(p), str(p) + "*"))
+                x = sorted(x)
+                #x = sorted(x, key=take_last_ele)
+                final.append(x)
     return final
 
 

@@ -59,7 +59,7 @@ def TSM_Cov2D(x, n_frame, nb_filters=128, kernel_size=(3, 3), activation='tanh',
     return x
 
 # own layer???
-class ownLayer(tf.keras.layers.Layer):
+class ownLayer_binaryPeak(tf.keras.layers.Layer):
     def call(self, x):
         out = self.get_peaks(x)
 
@@ -80,7 +80,7 @@ class ownLayer(tf.keras.layers.Layer):
         return maxima
 
     def get_config(self):
-        config = super(ownLayer, self).get_config()
+        config = super(ownLayer_binaryPeak, self).get_config()
         return config
 
 
@@ -169,7 +169,7 @@ def TS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), d
     model = Model(inputs=[diff_input, rawf_input], outputs=out)
     return model
 
-#%% PTS_CAN --> Advanced TS_CAN...
+#%% PTS_CAN --> Advanced TS_CAN with binary output signal
 def PTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), dropout_rate1=0.25, dropout_rate2=0.5,
            pool_size=(2, 2), nb_dense=128):
     diff_input = Input(shape=input_shape)
@@ -208,7 +208,51 @@ def PTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), 
     d10 = Dense(nb_dense, activation='tanh')(d9)
     d11 = Dropout(dropout_rate2)(d10)
     out1 = Dense(1, name='output_1')(d11)
-    out_peaks = ownLayer(name='output_2')(out1)
+    out_peaks = ownLayer_binaryPeak(name='output_2')(out1)
+
+    model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out_peaks])
+    return model
+
+# Advanced PTS-CAN: with additional parameter calculation
+def PPTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3), dropout_rate1=0.25, dropout_rate2=0.5,
+           pool_size=(2, 2), nb_dense=128, parameter=None):
+    diff_input = Input(shape=input_shape)
+    rawf_input = Input(shape=input_shape)
+
+    d1 = TSM_Cov2D(diff_input, n_frame, nb_filters1, kernel_size, padding='same', activation='tanh')
+    d2 = TSM_Cov2D(d1, n_frame, nb_filters1, kernel_size, padding='valid', activation='tanh')
+
+    r1 = Conv2D(nb_filters1, kernel_size, padding='same', activation='tanh')(rawf_input)
+    r2 = Conv2D(nb_filters1, kernel_size, activation='tanh')(r1)
+
+    g1 = Conv2D(1, (1, 1), padding='same', activation='sigmoid')(r2)
+    g1 = Attention_mask()(g1)
+    gated1 = multiply([d2, g1])
+
+    d3 = AveragePooling2D(pool_size)(gated1)
+    d4 = Dropout(dropout_rate1)(d3)
+
+    r3 = AveragePooling2D(pool_size)(r2)
+    r4 = Dropout(dropout_rate1)(r3)
+
+    d5 = TSM_Cov2D(d4, n_frame, nb_filters2, kernel_size, padding='same', activation='tanh')
+    d6 = TSM_Cov2D(d5, n_frame, nb_filters2, kernel_size, padding='valid', activation='tanh')
+
+    r5 = Conv2D(nb_filters2, kernel_size, padding='same', activation='tanh')(r4)
+    r6 = Conv2D(nb_filters2, kernel_size, activation='tanh')(r5)
+
+    g2 = Conv2D(1, (1, 1), padding='same', activation='sigmoid')(r6)
+    g2 = Attention_mask()(g2)
+    gated2 = multiply([d6, g2])
+
+    d7 = AveragePooling2D(pool_size)(gated2)
+    d8 = Dropout(dropout_rate1)(d7)
+
+    d9 = Flatten()(d8)
+    d10 = Dense(nb_dense, activation='tanh')(d9)
+    d11 = Dropout(dropout_rate2)(d10)
+    out1 = Dense(1, name='output_1')(d11)
+    out_peaks = ownLayer_binaryPeak(name='output_2')(out1)
 
     model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out_peaks])
     return model

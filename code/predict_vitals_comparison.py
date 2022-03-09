@@ -99,7 +99,7 @@ def predict_vitals(args):
 
     plt.plot(peaks_truth, pulse_truth[peaks_truth], "x", color="b")
     plt.title('Example: Participant out of UBFC-PHYS database')
-    plt.plot(pulse_truth, "b",  label='ground truth')
+    plt.plot(pulse_truth, "#005AA9",  label='ground truth')
     plt.legend()
     plt.show()
 

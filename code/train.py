@@ -78,15 +78,6 @@ parser.add_argument('-ml', '--maxFrames_video', type=int, default=1900, help="fr
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
 
-# %% Spliting Data
-
-print('Spliting Data...')
-subNum = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 25, 26, 27])
-if args.database_name != "COHFACE":
-    taskList = list(range(1, args.nb_task+1))
-else: 
-    taskList = list(range(0, args.nb_task))
-
 # %% Training
 
 
@@ -99,10 +90,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     input_shape = (img_rows, img_cols, 3)
     maxLen_video = args.maxFrames_video
 
-    path_of_video_tr = sort_dataFile_list_(args.data_dir, taskList, subTrain, args.database_name, train=True)
-    path_of_video_test = sort_dataFile_list_(args.data_dir, taskList, subTest, args.database_name, train=False)
-    path_of_video_tr = list(itertools.chain(*path_of_video_tr))  # Fllaten the list
-    path_of_video_test = list(itertools.chain(*path_of_video_test))
+    path_of_video_tr = sort_dataFile_list_(args.data_dir, subTrain, args.database_name, trainMode=True)
+    path_of_video_test = sort_dataFile_list_(args.data_dir, subTest, args.database_name, trainMode=False)
 
     #nframe_per_video = get_nframe_video_(path_of_video_tr[0])
     print('Train Length: ', len(path_of_video_tr))
