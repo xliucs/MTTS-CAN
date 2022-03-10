@@ -10,8 +10,7 @@
 
 #### Link: <https://papers.nips.cc/paper/2020/file/e1228be46de6a0234ac22ded31417bc7-Paper.pdf>
 
-## New Results
-Trained only on PURE, and Tested on UBFC
+## New Results (Trained only on PURE, and Tested on UBFC)
 
 |  (BPM) | MAE | MAPE | RMSE |Pearson Coef. |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
