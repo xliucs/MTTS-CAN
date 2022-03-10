@@ -10,6 +10,13 @@
 
 #### Link: <https://papers.nips.cc/paper/2020/file/e1228be46de6a0234ac22ded31417bc7-Paper.pdf>
 
+## New Results
+Trained only on PURE, and Tested on UBFC
+
+ |**MAE**|**MAPE**|**RMSE**|**Pearson**
+:-----:|:-----:|:-----:|:-----:|:-----:
+TS-CAN|1.47|1.56%|2.31|0.99
+
 
 ## New Pre-Trained Model (Updated Nov 2021)
 
