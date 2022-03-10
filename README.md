@@ -13,9 +13,9 @@
 ## New Results
 Trained only on PURE, and Tested on UBFC
 
- |**MAE**|**MAPE**|**RMSE**|**Pearson**
-:-----:|:-----:|:-----:|:-----:|:-----:
-TS-CAN|1.47|1.56%|2.31|0.99
+|  (BPM) | MAE | MAPE | RMSE |Pearson Coef. |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| TS-CAN  | 1.47  | 1.56%  | 2.31  | 0.99  |
 
 
 ## New Pre-Trained Model (Updated Nov 2021)
