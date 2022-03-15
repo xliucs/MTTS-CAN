@@ -41,12 +41,14 @@ def predict_vitals(args):
     pulse_pred = scipy.signal.filtfilt(b_pulse, a_pulse, np.double(pulse_pred))
     
     ##### ground truth data resampled  #######
-    if(str(sample_data_path).find("COHFACE")):
+    if(str(sample_data_path).find("COHFACE") >= 0):
         truth_path = args.video_path.replace(".avi", "_dataFile.hdf5")   # akutell für COHACE...
-    elif(str(sample_data_path).find("UBFC_PHYS")):
-        truth_path = args.video_path.replace("vid_", "") + "_dataFile.hdf5"
+    elif(str(sample_data_path).find("UBFC-PHYS")>= 0):
+        truth_path = args.video_path.replace("vid_", "").replace(".avi","_dataFile.hdf5")
+    elif(str(sample_data_path).find("UBFC")>= 0):
+        truth_path = args.video_path.replace("vid.avi","dataFile.hdf5")
     else:
-        return("Error in finding the ground truth signal...")
+        return print("Error in finding the ground truth signal...")
     gound_truth_file = h5py.File(truth_path, "r")
     pulse_truth = gound_truth_file["pulse"]
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
@@ -54,7 +56,8 @@ def predict_vitals(args):
     pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
     ### range ground truth from -1 to 1
     pulse_truth = (pulse_truth - pulse_truth.min())/(pulse_truth.max() - pulse_truth.min()) * 2 -1
-
+    
+    #pulse_pred = pulse_pred[5:]
     ########### Peaks ###########
     peaks_truth, peaks_ = np.array(signal.find_peaks(pulse_truth, prominence=0.5))
     peaks_pred, b  = np.array(signal.find_peaks(pulse_pred, prominence=0.2))
@@ -113,13 +116,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--video_path', type=str, help='processed video path')
     parser.add_argument('--batch_size', type=int, default = 100, help='batch size (multiplier of 10)')
-    parser.add_argument('--trained_model', type=str, default = './rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5', help='path to trained model')
+    parser.add_argument('--trained_model', type=str, default = "D:/Databases/4)Results/Version4/TS_Databases/TS_CAN_COHFACE_2GPU/cv_0_epoch24_model.hdf5", help='path to trained model')
 
     args = parser.parse_args()
 
     predict_vitals(args)
 
 
-#python code/predict_vitals.py --video_path "D:\Databases\3)Testing\COHFACE\22\0\data.avi" --trained_model "E:\Databases\4) Results\TS_CAN_UBFC_PHYS\cv_0_epoch23_model.hdf5"
+#python code/predict_vitals.py --video_path "C:\Users\sarah\OneDrive\Desktop\UBFC\DATASET_2\subject4\vid.avi" --trained_model "D:\Databases\4)Results\Version4\TS_Databases\TS_CAN_COHFACE_2GPU\cv_0_epoch23_model.hdf5"
 #./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
 #./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'

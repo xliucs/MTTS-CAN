@@ -13,14 +13,14 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 from xmlrpc.client import boolean
-from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss, time_error_loss
+from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss, MRPE_parameter_loss, time_error_loss
 import numpy as np
 import scipy.io
 import tensorflow as tf
 from tensorflow.python.keras.optimizers import adadelta_v2
 from data_generator import DataGenerator
 from model import HeartBeat, CAN, CAN_3D, Hybrid_CAN, TS_CAN, MTTS_CAN, \
-    MT_Hybrid_CAN, MT_CAN_3D, MT_CAN, PTS_CAN
+    MT_Hybrid_CAN, MT_CAN_3D, MT_CAN, PTS_CAN, PPTS_CAN
 from pre_process import split_subj_, sort_dataFile_list_, collect_subj
 
 np.random.seed(100)  # for reproducibility
@@ -74,6 +74,7 @@ parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE")
 parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE") 
 parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
 parser.add_argument('-ml', '--maxFrames_video', type=int, default=1900, help="frames")
+parser.add_argument('-p', '--parameter', default=None)
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args
@@ -110,8 +111,11 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = 32
         elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
             args.batch_size = 12
-        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN' or  args.temporal == 'PTS_CAN':
+        elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN'\
+            or  args.temporal == 'PTS_CAN':
             args.batch_size = 16#32
+        elif args.temporal == 'PPTS_CAN':
+            args.batch_size = 2
         elif args.temporal == 'Hybrid_CAN' or args.temporal == 'MT_Hybrid_CAN':
             args.batch_size = 4# 16
         else:
@@ -125,7 +129,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             args.batch_size = args.batch_size // 2
         elif strategy.num_replicas_in_sync == 1:
             print('Using 1 GPU for training!')
-            args.batch_size = 4
+            args.batch_size = 1#4
         elif strategy.num_replicas_in_sync == 4:
             print("Using 4 GPUs for training")
         else:
@@ -160,6 +164,12 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             input_shape = (img_rows, img_cols, 3)
             model = PTS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense)
+        elif args.temporal == 'PPTS_CAN':
+            print('Using PPTS_CAN: with PeakLocation!')
+            input_shape = (img_rows, img_cols, 3)
+            args.parameter = str(args.parameter).split(",")
+            model = PPTS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
+                           dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense, parameter=args.parameter)
         elif args.temporal == 'MTTS_CAN':
             print('Using MTTS_CAN!')
             input_shape = (img_rows, img_cols, 3)
@@ -199,7 +209,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                 loss1 = negPearsonLoss
             elif args.loss_function1 == "Gauss_Peak":
                 raise NotImplementedError
-            # output 2: Gaussdistribution around peak locations
+            # output 2: Gaussdistribution around peak locations or TimeError
             if args.loss_function2 == "MSE":
                 loss2 = 'mean_squared_error'
             elif args.loss_function2 == "NegPea":
@@ -212,6 +222,33 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                    
             losses = {"output_1": loss1, "output_2": loss2}
             loss_weights = {"output_1": 0.5, "output_2": 0.5}
+            model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
+        
+        elif args.temporal == 'PPTS_CAN':
+            # output 1: rPPG Signal
+            if args.loss_function1 == "MSE":
+                loss1 = 'mean_squared_error'
+            elif args.loss_function1 == "NegPea":
+                loss1 = negPearsonLoss
+            elif args.loss_function1 == "Gauss_Peak":
+                raise NotImplementedError
+            # output 2: Gaussdistribution around peak locations or TimeError
+            if args.loss_function2 == "MSE":
+                loss2 = 'mean_squared_error'
+            elif args.loss_function2 == "NegPea":
+                loss2 = negPearsonLoss
+                raise NotImplementedError
+            elif args.loss_function2 == "Gauss_Peak":
+                loss2 = gaussian_loss
+            elif args.loss_function2 == "time_Error":
+                loss2 = time_error_loss
+            else: 
+                raise NotImplementedError
+            # output 3: different Parameter
+            loss3 = MRPE_parameter_loss
+                   
+            losses = {"output_1": loss1, "output_2": loss2, "output_3": loss3}
+            loss_weights = {"output_1": 1, "output_2": 1, "output_3": 1}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
         
         else:
@@ -239,12 +276,15 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         # %% Create data genener
         training_generator = DataGenerator(path_of_video_tr, maxLen_video, (img_rows, img_cols),
                                            batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                           temporal=args.temporal, respiration=args.respiration, database_name=args.database_name, time_error_loss=timeError)
+                                           temporal=args.temporal, respiration=args.respiration, 
+                                           database_name=args.database_name, time_error_loss=timeError,
+                                           truth_parameter=args.parameter)
         validation_generator = DataGenerator(path_of_video_test, maxLen_video, (img_rows, img_cols),
                                              batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                             temporal=args.temporal, respiration=args.respiration, database_name=args.database_name, time_error_loss=timeError)
+                                             temporal=args.temporal, respiration=args.respiration,
+                                            database_name=args.database_name, time_error_loss=timeError,
+                                            truth_parameter=args.parameter)
       
-
         # %%  Checkpoint Folders
         checkpoint_folder = str(os.path.join(args.save_dir, args.exp_name))
         if not os.path.exists(checkpoint_folder):

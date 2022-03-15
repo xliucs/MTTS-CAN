@@ -1,8 +1,9 @@
 '''
 Models for Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
 Author: Xin Liu
+further developed: Sarah Quehl
 '''
-
+from numpy import float32
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.layers import Conv2D, Conv3D, Input, AveragePooling2D, \
@@ -71,11 +72,7 @@ class ownLayer_binaryPeak(tf.keras.layers.Layer):
         max_pooled_in_tensor = tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
         maxima = tf.equal(data_reshaped, max_pooled_in_tensor) # (1, N, 1)
         maxima = tf.cast(maxima, tf.float32)
-        #maxima = tf.squeeze(maxima) # (N,1)
         maxima = tf.reshape(maxima, (-1,1))
-        #peaks = tf.where(maxima) # now only the Peak Indices (A, 3)
-        #
-        # peaks = tf.reshape(peaks, (-1,)) # (A,1)
 
         return maxima
 
@@ -83,6 +80,55 @@ class ownLayer_binaryPeak(tf.keras.layers.Layer):
         config = super(ownLayer_binaryPeak, self).get_config()
         return config
 
+class ownLayer_parameter(tf.keras.layers.Layer):
+    def call(self, x, parameter):
+        rr = self.get_rr(x)
+        f_bpm = lambda: self.get_HR(tf.cast(rr, dtype=float32))
+        f_sdnn = lambda: self.get_sdnn(tf.cast(rr, dtype=float32))
+
+        result = []
+        for item in parameter:
+            result_part = tf.case([(tf.equal(item,'bpm'), f_bpm), (tf.equal(item,'sdnn'), f_sdnn)], default=f_bpm)
+            result.append(result_part)
+
+        result = tf.convert_to_tensor(result)
+        result = tf.reshape(result, (-1,1))
+        return result
+        
+    def get_rr(self, y):
+        # y: (N,1)
+        fs = 20
+        # def fs_COHFACE():
+        #     return 20
+        # def fs_UBFC():
+        #     return tf.cast(35.138)
+        # fs = tf.cond(tf.size(y) > 1300, )
+
+        indices = tf.where(tf.equal(tf.reshape(y, (-1,)),1))
+        peak_locations = tf.squeeze(indices)
+       
+        def tf_diff_axis_0(a):
+            return a[1:]-a[:-1]
+        ibi_arr = tf_diff_axis_0(peak_locations)*fs
+
+        mask = tf.logical_and(tf.greater_equal(ibi_arr,333),tf.less_equal(ibi_arr, 1500))
+        mask.set_shape([None])
+        
+        rr_arr = tf.boolean_mask(ibi_arr, mask)
+
+        return rr_arr
+    
+    def get_HR(self, rr):
+        rr_mean = tf.reduce_mean(rr)
+        HR = 60000/rr_mean
+        return HR
+
+    def get_sdnn(self, rr):
+        return tf.math.reduce_std(rr)   
+
+    def get_config(self):
+        config = super(ownLayer_binaryPeak, self).get_config()
+        return config
 
 # %%
 # DEEPPHYS????
@@ -253,8 +299,9 @@ def PPTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3),
     d11 = Dropout(dropout_rate2)(d10)
     out1 = Dense(1, name='output_1')(d11)
     out_peaks = ownLayer_binaryPeak(name='output_2')(out1)
+    out_params = ownLayer_parameter(name='output_3')(out_peaks, parameter)
 
-    model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out_peaks])
+    model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out_peaks, out_params])
     return model
 
 # %%  --> PhysNet mit AttentionModule

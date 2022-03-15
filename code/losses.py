@@ -39,6 +39,12 @@ def time_error_loss(y_true, y_pred):
     y_true = tf.reshape(y_true, (-1,))
     return tf.reduce_sum(y_true*y_pred)
 
+def MRPE_parameter_loss(y_true, y_pred):
+    y_true = tf.reshape(y_true, (-1,))
+    y_pred = tf.reshape(y_pred, (-1,))
+    AE = tf.abs(y_true-y_pred)/y_true
+    return tf.reduce_mean(AE)
+
 def negPearsonLoss_onlyPeaks(y_true, y_pred):
     peaks_true = get_peaks(y_true)
     peaks_pred = get_peaks(y_pred)

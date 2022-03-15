@@ -36,16 +36,16 @@ def prepare_Hybrid_CAN(dXsub):
     apperance_data = np.average(tempX[:, :, :, :, -3:], axis=-2)
     return motion_data, apperance_data
 
-def predict_vitals(workBook, test_name, model_name, video_path):
+def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     mms = MinMaxScaler()
     img_rows = 36
     img_cols = 36
     frame_depth = 10
     batch_size = 100
     try:
-        model_checkpoint = os.path.join("D:/Databases/4)Results/actual_models", test_name, "cv_0_epoch24_model.hdf5")
+        model_checkpoint = os.path.join(path_results, test_name, "cv_0_epoch24_model.hdf5")
     except:
-        model_checkpoint = os.path.join("D:/Databases/4)Results/actual_models", test_name, "cv_0_epoch23_model.hdf5")
+        model_checkpoint = os.path.join(path_results, test_name, "cv_0_epoch23_model.hdf5")
     batch_size = batch_size
     sample_data_path = video_path
     print("path:  ",sample_data_path)
@@ -53,7 +53,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
     dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
     print('dXsub shape', dXsub.shape, "fs: ", fs)
 
-    dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
+    dXsub_len = 2100#(dXsub.shape[0] // frame_depth)  * frame_depth
     dXsub = dXsub[:dXsub_len, :, :, :]
     
     if model_name == "TS_CAN":
@@ -83,7 +83,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
         pulse_pred = yptest
     else:
         pulse_pred = yptest[0]
-    
+     
     pulse_pred = detrend(np.cumsum(pulse_pred), 100)
     [b_pulse_pred, a_pulse_pred] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_pred = scipy.signal.filtfilt(b_pulse_pred, a_pulse_pred, np.double(pulse_pred))
@@ -99,6 +99,7 @@ def predict_vitals(workBook, test_name, model_name, video_path):
 
     gound_truth_file = h5py.File(truth_path, "r")
     pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
+    pulse_truth = pulse_truth[0:2100]
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
     [b_pulse_tr, a_pulse_tr] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
@@ -216,27 +217,31 @@ def predict_vitals(workBook, test_name, model_name, video_path):
         col += 1
    
 if __name__ == "__main__":
-    dir_names = glob("D:/Databases/4)Results/actual_models/*")
+    path_results = "D:/Databases/4)Results/Version4/"
+    dir_names = glob(path_results + "*")
     test_names = []
     for dir in dir_names:
         split = dir.split("\\")
         test_names.append(split[len(split)-1])
     batch_size = 8
-    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi","D:/Databases/1)Training/COHFACE/10/2/data.avi",
-    "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi", "D:/Databases/1)Training/COHFACE/6/0/data.avi",
+    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
+    "D:/Databases/1)Training/COHFACE/10/2/data.avi", "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi",
+    "D:/Databases/1)Training/COHFACE/6/0/data.avi",
     "D:/Databases/1)Training/UBFC-PHYS/s13/vid_s13_T3.avi",
     
     "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
     "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
-    "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
+    "D:/Databases/2)Validation/COHFACE/34/2/data.avi"] 
+   
     
     # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
-    
+    test_names = ['Hybrid_CAN_COHFACE'] #'_CAN_COHFACE', 
     # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
-    save_dir = "D:/Databases/5)Evaluation/Comparison_Databases"
+    save_dir = "D:/Databases/5)Evaluation/Comparison_basicMOdels"
 
-    test_names = ["TS_CAN_UBFC_new"]#[ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
+    #test_names = ["TS_CAN_UBFC_new"]#[ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
     print("Models: ", test_names)
+    
    
     for test_name in test_names:
         print("Current Modelname: ", test_name)
@@ -248,12 +253,12 @@ if __name__ == "__main__":
             model_name = "TS_CAN"
         elif str(test_name).find("PTS_CAN") >= 0:
             model_name = "PTS_CAN"
-            continue
         else:
             if str(test_name).find("CAN") >= 0:
                 model_name = "CAN"
             else: 
                 raise Error("Model not found...")
+                
         # neuer Ordner für Tests
         os.chdir(save_dir)
         try:
@@ -264,7 +269,7 @@ if __name__ == "__main__":
         os.chdir(save_path)
         workbook = xlsxwriter.Workbook(test_name + ".xlsx")
         for vid in video_path:
-            predict_vitals(workbook, test_name, model_name, vid)
+            predict_vitals(workbook, test_name, model_name, vid, path_results)
         workbook.close()
 
 #python code/predict_vitals_new.py --video_path "D:\Databases\1)Training\COHFACE\1\1\data.avi" --trained_model ./cv_0_epoch24_model.hdf5

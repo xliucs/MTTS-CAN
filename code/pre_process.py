@@ -89,6 +89,12 @@ def sort_video_list_(data_dir, taskList, subTrain, database_name, train):
                     x = sorted(x)
                     #x = sorted(x, key=take_last_ele)
                     final.append(x)
+    elif database_name == "UBFC":
+        if train:
+            x = glob.glob(os.path.join(data_dir, "**/", 'vid.avi'), recursive=True)
+            x = sorted(x)
+            #x = sorted(x, key=take_last_ele)
+            final.append(x)
     else: 
         print("not implemented yet.")
     return final
@@ -174,6 +180,9 @@ def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
     elif database == "COHFACE":
         subTrain = np.array(range(1, 33)).tolist()# 33)).tolist()
         subTest = np.array(range(32,41)).tolist() # 41)).tolist()
+    elif database == "UBFC":
+        subTrain = np.array(range(1,49))
+        subTest = np.array([])
     else:
         print("This Database isn't implemented yet.")
     return subTrain, subTest

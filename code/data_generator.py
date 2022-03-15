@@ -12,11 +12,12 @@ import numpy as np
 from pandas.core.resample import h
 import tensorflow as tf
 from tensorflow.python.keras.utils import data_utils
+import ast
 
 class DataGenerator(data_utils.Sequence):
     'Generates data for Keras'
     def __init__(self, paths_of_videos, maxLen_Video, dim, batch_size=32, frame_depth=10,
-                 shuffle=True, temporal=True, respiration=0, database_name = None, time_error_loss=False):
+                 shuffle=True, temporal=True, respiration=0, database_name = None, time_error_loss=False, truth_parameter=None):
         self.dim = dim
         self.batch_size = batch_size
         self.paths_of_videos = paths_of_videos
@@ -27,6 +28,7 @@ class DataGenerator(data_utils.Sequence):
         self.respiration = respiration
         self.database_name = database_name
         self.time_error_loss = time_error_loss
+        self.truth_parameter = truth_parameter
         self.on_epoch_end()
 
     def __len__(self): 
@@ -197,6 +199,69 @@ class DataGenerator(data_utils.Sequence):
                                                          apperance_data.shape[4]))
             label = (label_y, label_z)
             output = (motion_data, apperance_data)
+
+        # new Parameter Peak Temperal Shift CAN
+        elif self.temporal == 'PPTS_CAN':
+            sum_frames_batch = get_frame_sum(list_video_temp, self.maxLen_Video)
+            data = np.zeros((sum_frames_batch, self.dim[0], self.dim[1], 6), dtype=np.float32)
+            label_y = np.zeros((sum_frames_batch, 1), dtype=np.float32)
+            label_z = np.zeros((sum_frames_batch, 1), dtype=np.float32)
+            label_params = np.zeros(self.batch_size*len(self.truth_parameter), dtype=np.float32)
+            
+            num_window = int(sum_frames_batch/ self.frame_depth)
+            index_counter = 0
+            param_counter = 0
+            for index, temp_path in enumerate(list_video_temp):
+                f1 = h5py.File(temp_path, 'r')
+                dXsub = np.array(f1['data'])
+                dysub = np.array(f1['pulse'])
+                dzsub = np.array(f1['peaklist'])
+
+                truthParams = np.array(f1['parameter'])
+                truthParams = np.array(truthParams)
+                truthParams = ast.literal_eval(str(truthParams))
+                params = np.zeros(len(self.truth_parameter))
+                for parameter_index in range(0,len(self.truth_parameter)):
+                    params[parameter_index] = truthParams[str(self.truth_parameter[parameter_index])]
+                label_params[param_counter: param_counter+len(self.truth_parameter)] = params
+                
+                if dXsub.shape[0] > self.maxLen_Video: # UBFC-PHYS
+                    current_nframe = dXsub.shape[0]
+                    sigma = 2.6
+                    fps = 35.138
+                else: #COHFACE
+                    current_nframe = dXsub.shape[0]
+                    sigma = 1.5
+                    fps = 20
+                data[index_counter:index_counter+current_nframe, :, :, :] = dXsub
+                label_y[index_counter:index_counter+current_nframe, 0] = dysub # data BVP
+                if(self.time_error_loss == False):
+                    temp = gauss_loss_dataGenerator(current_nframe, dzsub, sigma)
+                else:
+                    temp = time_error_loss_dataGenerator(current_nframe, dzsub, fps)
+                label_z[index_counter:index_counter+current_nframe, 0] = temp # data Peaks
+                index_counter += current_nframe
+                param_counter += len(self.truth_parameter)
+            motion_data = data[:, :, :, :3]
+            apperance_data = data[:, :, :, -3:]
+            
+            if num_window % 2 == 1:
+                num_window = num_window - 1
+                max_data = num_window * self.frame_depth
+            else: 
+                max_data = num_window*self.frame_depth
+            motion_data = motion_data[0:max_data, :, :, :]
+            apperance_data = apperance_data[0:max_data, :, :, :]
+            label_y = label_y[0:max_data, 0]
+            label_z = label_z[0:max_data, 0]
+            apperance_data = np.reshape(apperance_data, (num_window, self.frame_depth, self.dim[0], self.dim[1], 3))
+            apperance_data = np.average(apperance_data, axis=1)
+            apperance_data = np.repeat(apperance_data[:, np.newaxis, :, :, :], self.frame_depth, axis=1)
+            apperance_data = np.reshape(apperance_data, (apperance_data.shape[0] * apperance_data.shape[1],
+                                                         apperance_data.shape[2], apperance_data.shape[3],
+                                                         apperance_data.shape[4]))
+            label = (label_y, label_z, label_params)
+            output = (motion_data, apperance_data)
        
 
         elif self.temporal == 'Hybrid_CAN':
@@ -357,10 +422,10 @@ def get_frame_sum_3D_Hybrid(list_vid, maxLen_Video):
     for vid in list_vid:
         hf = h5py.File(vid, 'r')
         shape = hf['data'].shape
-        if shape[0] > maxLen_Video:
-          frames_sum += maxLen_Video - 9
-        else: 
-          frames_sum += shape[0] - 9
+        # if shape[0] > maxLen_Video:
+        #   frames_sum += maxLen_Video - 9
+        # else: 
+        frames_sum += shape[0] - 9
         counter += 1
     return frames_sum
 

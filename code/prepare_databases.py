@@ -81,6 +81,27 @@ def dataSet_preprocess(vid, name):
         pulse = np.array(hf)
 
         return nframesPerVideo, fps, dXsub, pulse
+    if name == "UBFC":
+        if os.path.exists(str(vid).replace(".avi", "_vid.hdf5")):
+            os.remove(str(vid).replace(".avi", "_vid.hdf5"))
+            print("deleted")
+        if os.path.exists(str(vid).replace(".avi", "_dataFile.hdf5")):
+            os.remove(str(vid).replace(".avi", "_dataFile.hdf5"))
+            print("deleted")
+            
+        dXsub, fps = preprocess_raw_video(vid, 36)
+        print(dXsub.shape, "  fps: ", fps)
+        nframesPerVideo = dXsub.shape[0]
+
+        # ground truth data:
+        truth_data_path = str(vid).replace(".avi", ".txt").replace('vid', 'ground_truth')
+        data = open(truth_data_path, 'r').read()
+        data = str(data).split("  ")
+        data = data[1:]
+        pulse = np.array(list(map(float, data[0: nframesPerVideo])))
+
+        return nframesPerVideo, fps, dXsub, pulse
+
 def process_save(nframesPerVideo, fps, dXsub, pulse, vid):
     # HR and HRV analysis
     working_data, measures = hr_analysis(vid, pulse, nframesPerVideo, fps)
@@ -99,6 +120,8 @@ def process_save(nframesPerVideo, fps, dXsub, pulse, vid):
     
     ##### save data ######
     newPath_name = str(vid).replace(".avi", "_dataFile.hdf5")
+    if (str(vid).find("UBFC") >=0):
+        newPath_name = newPath_name.replace("vid_", "")
     data_file = h5py.File(newPath_name, 'a')
     data_file.create_dataset('data', data=dXsub)  # write the data to hdf5 file
     data_file.create_dataset('pulse', data=pulse_res)
@@ -197,6 +220,8 @@ def prepare_database(name, tasks, data_dir):
         taskList = list(range(1, tasks+1))
     elif name == "COHFACE":
         taskList = list(range(0, tasks))
+    elif name == "UBFC":
+        taskList = [0]
     else: 
         print("Not implemented yet")
     subTrain, subTest = split_subj_(data_dir, name)
@@ -217,5 +242,7 @@ def prepare_database(name, tasks, data_dir):
 #data_dir = "D:/Databases"
 #prepare_database("COHFACE", 4, data_dir)
 data_dir = "/mnt/share/StudiShare/sarah/Databases/"
-prepare_database("UBFC_PHYS", 3, data_dir)
+
+data_dir = "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2"
+prepare_database("UBFC", 1, data_dir)
 
