@@ -13,7 +13,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 from xmlrpc.client import boolean
-from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss, MRPE_parameter_loss, time_error_loss
+from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss, MAPE_parameter_loss, time_error_loss
 import numpy as np
 import scipy.io
 import tensorflow as tf
@@ -73,7 +73,7 @@ parser.add_argument('-database', '--database_name', type=str,
 parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE") 
 parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE") 
 parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
-parser.add_argument('-ml', '--maxFrames_video', type=int, default=1900, help="frames")
+parser.add_argument('-ml', '--maxFrames_video', type=int, default=2500, help="frames")
 parser.add_argument('-p', '--parameter', default=None)
 
 args = parser.parse_args()
@@ -205,50 +205,73 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             # output 1: rPPG Signal
             if args.loss_function1 == "MSE":
                 loss1 = 'mean_squared_error'
+                loss_weights1 = 1
             elif args.loss_function1 == "NegPea":
                 loss1 = negPearsonLoss
+                loss_weights1 = 1
+            elif args.loss_function1 == "MSE_negPea":
+                loss1a = 'mean_squared_error'
+                loss1b = negPearsonLoss
+                loss1 = [loss1a, loss1b]
+                loss_weights1 = [1,1]
             elif args.loss_function1 == "Gauss_Peak":
                 raise NotImplementedError
             # output 2: Gaussdistribution around peak locations or TimeError
             if args.loss_function2 == "MSE":
                 loss2 = 'mean_squared_error'
+                loss_weights2 = 1
             elif args.loss_function2 == "NegPea":
                 loss2 = negPearsonLoss
+                loss_weights2 = 1
                 raise NotImplementedError
             elif args.loss_function2 == "Gauss_Peak":
                 loss2 = gaussian_loss
+                loss_weights2 = 1
             elif args.loss_function2 == "time_Error":
                 loss2 = time_error_loss
+                loss_weights2 = 1
                    
             losses = {"output_1": loss1, "output_2": loss2}
-            loss_weights = {"output_1": 0.5, "output_2": 0.5}
+            loss_weights = {"output_1": loss_weights1, "output_2": loss_weights2}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
         
         elif args.temporal == 'PPTS_CAN':
             # output 1: rPPG Signal
             if args.loss_function1 == "MSE":
                 loss1 = 'mean_squared_error'
+                loss_weights1 = 1
             elif args.loss_function1 == "NegPea":
                 loss1 = negPearsonLoss
+                loss_weights1 = 1
+            elif args.loss_function1 == "MSE_negPea":
+                loss1a = 'mean_squared_error'
+                loss1b = negPearsonLoss
+                loss1 = [loss1a, loss1b]
+                loss_weights1 = [1,1]
             elif args.loss_function1 == "Gauss_Peak":
                 raise NotImplementedError
             # output 2: Gaussdistribution around peak locations or TimeError
             if args.loss_function2 == "MSE":
                 loss2 = 'mean_squared_error'
+                loss_weights2 = 1
             elif args.loss_function2 == "NegPea":
                 loss2 = negPearsonLoss
+                loss_weights2 = 1
                 raise NotImplementedError
             elif args.loss_function2 == "Gauss_Peak":
                 loss2 = gaussian_loss
+                loss_weights2 = 1
             elif args.loss_function2 == "time_Error":
                 loss2 = time_error_loss
+                loss_weights2 = 1
             else: 
                 raise NotImplementedError
             # output 3: different Parameter
-            loss3 = MRPE_parameter_loss
+            loss3 = MAPE_parameter_loss
+            loss_weights3 = 1
                    
             losses = {"output_1": loss1, "output_2": loss2, "output_3": loss3}
-            loss_weights = {"output_1": 1, "output_2": 1, "output_3": 1}
+            loss_weights = {"output_1": loss_weights1, "output_2": loss_weights2, "output_3": loss_weights3}
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
         
         else:
@@ -258,10 +281,12 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                 print("negative Pearson Loss ")
                 loss = negPearsonLoss
                 model.compile(loss=loss, optimizer=optimizer)
-            elif args.loss_function1 == "negPea_Peak":
-                print("negative Pearson Loss of the Peaks")
-                loss = negPearsonLoss_onlyPeaks
-                model.compile(loss= loss, optimizer=optimizer)
+            elif args.loss_function1 == "MSE_negPea":
+                loss1 = 'mean_squared_error'
+                loss2 = negPearsonLoss
+                losses = [loss1, loss2]
+                loss_weights = [1,1]
+                model.compile(loss= losses, loss_weights=loss_weights, optimizer=optimizer)
             else:
                 return ValueError('Unsupported Loss Function')
 
@@ -343,8 +368,9 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
         file.write("Name:  "), file.write(args.exp_name)
         file.write("\nModel:   "), file.write(args.temporal)
         file.write("\nBatch Size:   "), file.write(str(args.batch_size))
-        file.write("\nLoss Function (output0):  "), file.write(args.loss_function1)
-        file.write("\nLoss Function (output1):  "), file.write(args.loss_function2)
+        file.write("\nLoss Function (output1):  "), file.write(args.loss_function1)
+        file.write("\nLoss Function (output2):  "), file.write(args.loss_function2)
+        file.write("\nLoss Function (output3):  "), file.write("MAPE")
         file.write("\nMax Frames Video: "), file.write(str(args.maxFrames_video))
         file.write("\nLearningrate:   "), file.write(str(args.lr))
         file.write("\nTrain Subjects:  "), file.write(str(subTrain))
