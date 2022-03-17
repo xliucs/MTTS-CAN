@@ -2,7 +2,7 @@ from aifc import Error
 import numpy as np
 import scipy.io
 import xlsxwriter
-from model import CAN, CAN_3D, PTS_CAN, TS_CAN, Hybrid_CAN
+from model import CAN, CAN_3D, PPTS_CAN, PTS_CAN, TS_CAN, Hybrid_CAN
 import h5py
 import os
 import matplotlib.pyplot as plt
@@ -49,12 +49,17 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     batch_size = batch_size
     sample_data_path = video_path
     print("path:  ",sample_data_path)
-
     dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
     print('dXsub shape', dXsub.shape, "fs: ", fs)
-
-    dXsub_len = 2100#(dXsub.shape[0] // frame_depth)  * frame_depth
-    dXsub = dXsub[:dXsub_len, :, :, :]
+    
+    if model_name == "PPTS_CAN":
+        dXsub_len = (dXsub.shape[0] // (frame_depth*10))  * (frame_depth*10)
+        dXsub = dXsub[:dXsub_len, :, :, :]
+        
+    else: 
+        a = dXsub.shape[0] // frame_depth
+        dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
+        dXsub = dXsub[:dXsub_len, :, :, :]
     
     if model_name == "TS_CAN":
         model = TS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
@@ -69,6 +74,8 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         dXsub1, dXsub2 = prepare_Hybrid_CAN(dXsub)
     elif model_name == "PTS_CAN":
         model = PTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
+    elif model_name == "PPTS_CAN":
+        model = PPTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3), parameter=['bpm', 'sdnn'])
     else: 
         raise NotImplementedError
 
@@ -79,7 +86,7 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         yptest = model.predict((dXsub1, dXsub2), batch_size=batch_size, verbose=1)
     else:
         yptest = model.predict((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]), batch_size=batch_size, verbose=1)
-    if model_name != "PTS_CAN":
+    if model_name != "PTS_CAN" and model_name != "PPTS_CAN":
         pulse_pred = yptest
     else:
         pulse_pred = yptest[0]
@@ -101,7 +108,7 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
 
     gound_truth_file = h5py.File(truth_path, "r")
     pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
-    pulse_truth = pulse_truth[0:2100]
+    pulse_truth = pulse_truth[0:dXsub_len]
     pulse_truth = detrend(np.cumsum(pulse_truth), 100)
     [b_pulse_tr, a_pulse_tr] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
@@ -223,7 +230,7 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         col += 1
    
 if __name__ == "__main__":
-    path_results = "D:/Databases/4)Results/Version4/"
+    path_results = "D:/Databases/4)Results/Version4"
     dir_names = glob(path_results + "*")
     test_names = []
     for dir in dir_names:
@@ -244,13 +251,13 @@ if __name__ == "__main__":
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject15/vid.avi",
     
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject34/vid.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject38/vid.avi",
-    "D:/Databases/2)Validation/COHFACE/38/0/data.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject41/vid.avi",
-    "D:/Databases/2)Validation/COHFACE/34/2/data.avi"] 
+    "D:/Databases/2)Validation/COHFACE/38/0/data.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject41/vid.avi", "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
+    #video_path =["D:/Databases/1)Training/COHFACE/5/1/data.avi"] 
     
     # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
-    test_names = ['3D_CAN_COHFACE', 'Hybrid_CAN_COHFACE', 'CAN_COHFACE', '3D_CAN_COHFACE-lr', 'TS_CAN_negPea', 'TS_CAN'] #'_', 
+    test_names = ['TS_CAN_UBFCrPPG'] #'_', 
     # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
-    save_dir = "D:/Databases/5)Evaluation/Comparison_basicModels2"
+    save_dir = "D:/Databases/5)Evaluation/Comparison_Databases"
 
     #test_names = ["TS_CAN_UBFC_new"]#[ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
     print("Models: ", test_names)
@@ -264,7 +271,9 @@ if __name__ == "__main__":
             model_name = "Hybrid_CAN"
         elif str(test_name).find("TS_CAN") >= 0:
             model_name = "TS_CAN"
-        elif str(test_name).find("PTS_CAN") >= 0:
+        elif str(test_name).find("PPTS") >= 0:
+            model_name = "PPTS_CAN"
+        elif str(test_name).find("PTS") >= 0:
             model_name = "PTS_CAN"
         else:
             if str(test_name).find("CAN") >= 0:

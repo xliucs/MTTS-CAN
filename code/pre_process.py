@@ -110,11 +110,24 @@ def sort_dataFile_list_(data_dir, subTrain, database_name, trainMode):
     elif database_name == "UBFC":
         final = dataFile_UBFC(data_dir, trainMode)
         final = list(itertools.chain(*final))
-    elif database_name == "MIX":
+    elif database_name == "MIX1":
         for database in subTrain.keys():
             final = []
             if(str(database).find("UBFC") >= 0):
                 finalPart1  = dataFiles_UBFC_PHYS(data_dir, subTrain[database], trainMode, mode=0)
+                finalPart1 = list(itertools.chain(*finalPart1))
+            elif str(database).find("COHFACE") >= 0:
+                taskList = [0, 1, 2, 3]
+                finalPart2 = dataFile_COHFACE(data_dir, taskList, subTrain[database], trainMode)
+                finalPart2 = list(itertools.chain(*finalPart2))
+            else:
+                raise NotImplementedError
+        final = finalPart1 + finalPart2
+    elif database_name == "MIX2":
+        for database in subTrain.keys():
+            final = []
+            if(str(database).find("UBFC") >= 0):
+                finalPart1  = dataFile_UBFC(data_dir, trainMode)
                 finalPart1 = list(itertools.chain(*finalPart1))
             elif str(database).find("COHFACE") >= 0:
                 taskList = [0, 1, 2, 3]
@@ -180,12 +193,12 @@ def dataFile_UBFC(data_dir, train):
     if train:
         x = glob.glob(os.path.join(data_dir,'1)Training/UBFC', "**/", 'dataFile.hdf5'), recursive=True)
         x = sorted(x)
-            #x = sorted(x, key=take_last_ele)
+        #x = sorted(x, key=take_last_ele)
         final.append(x)
     else:
         x = glob.glob(os.path.join(data_dir,'2)Validation/UBFC', "**/", 'dataFile.hdf5'), recursive=True)
         x = sorted(x)
-            #x = sorted(x, key=take_last_ele)
+        #x = sorted(x, key=take_last_ele)
         final.append(x)
     return final
 
@@ -204,19 +217,22 @@ def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
         print("This Database isn't implemented yet.")
     return subTrain, subTest
 
-def collect_subj(data_dir): # collecting all subject out of data_dir..
+def collect_subj(data_dir, database_name): # collecting all subject out of data_dir..
     
     path_tr = os.path.join(data_dir, "1)Training")
     path_val = os.path.join(data_dir, "2)Validation")
-    databases_tr =glob.glob(os.path.join(path_tr, "*"))
-    databases_val =glob.glob(os.path.join(path_val, "*"))
+    mix1 = ['COHFACE', 'UBFC-PHYS']
+    mix2 = ['COHFACE', 'UBFC']
+    if database_name == "MIX1":
+        mix = mix1
+    elif database_name == "MIX2":
+        mix = mix2
     subTrain = {}
     subTest = {}
-    for database in databases_tr:
-        subj_tr = os.listdir(database)
+    for database in mix:
+        subj_tr = os.listdir(os.path.join(path_tr, database))
         subTrain[database] = subj_tr
-    for database in databases_val:
-        subj_val = os.listdir(database)
+        subj_val = os.listdir(os.path.join(path_val, database))
         subTest[database] = subj_val
 
     return subTrain, subTest

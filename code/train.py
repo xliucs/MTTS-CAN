@@ -388,10 +388,12 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 
 print('Using Split ', str(args.cv_split))
 print("DatabaseName:  ", args.database_name)
-if args.database_name != "MIX":
+# Mix1: COHFACE and UBFC-Phys 
+# Mix2: COHFACE and UBFC-rPPG
+if args.database_name != "MIX1" and args.database_name != "MIX2":
     subTrain, subTest = split_subj_(args.data_dir, args.database_name)
 else:
-    subTrain, subTest = collect_subj(args.data_dir)
+    subTrain, subTest = collect_subj(args.data_dir, args.database_name)
 
 if args.decrease_database == True:
     if args.database_name == "COHFACE":
@@ -400,7 +402,7 @@ if args.decrease_database == True:
     elif args.database_name == "UBFC_PHYS":
         subTrain = subTrain[0:25]
         subTest = subTest[0:10]
-    elif args.database_name == "MIX":
+    elif args.database_name == "MIX1":
         for key in subTrain.keys():
             subTrain[key] = subTrain[key][0:6]
         for key in subTest.keys():
