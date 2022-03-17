@@ -163,10 +163,15 @@ class DataGenerator(data_utils.Sequence):
                 dXsub = np.array(f1['data'])
                 dysub = np.array(f1['pulse'])
                 dzsub = np.array(f1['peaklist'])
+                
                 if dXsub.shape[0] > self.maxLen_Video: # UBFC-PHYS
                     current_nframe = dXsub.shape[0]
                     sigma = 2.6
                     fps = 35.138
+                elif dXsub.shape[0] > 1300 and dXsub.shape[0] < 2200: # UBFC-rPPG
+                    current_nframe = dXsub.shape[0]
+                    sigma = 2.2
+                    fps = 29.51
                 else: #COHFACE
                     current_nframe = dXsub.shape[0]
                     sigma = 1.5

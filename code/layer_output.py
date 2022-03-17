@@ -18,11 +18,11 @@ def gaussian_loss(y_true, y_pred):
 path_of_video_tr = ["D:/Databases/1)Training/COHFACE/2/0/data_dataFile.hdf5"]#,"D:/Databases/1)Training/COHFACE/2/1/data_dataFile.hdf5"]
                   #  "D:/Databases/1)Training/COHFACE/1/2/data_dataFile.hdf5","D:/Databases/1)Training/COHFACE/1/3/data_dataFile.hdf5"]
 
-model = PPTS_CAN(10, 32, 64, (36,36,3),
-                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128, parameter=['bpm', 'sdnn'])
+model = PTS_CAN(10, 32, 64, (36,36,3),
+                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128)#, parameter=['bpm', 'sdnn'])
 training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
                                            batch_size=1, frame_depth=10,
-                                           temporal="PPTS_CAN", respiration=False, database_name="COHFACE", 
+                                           temporal="PTS_CAN", respiration=False, database_name="COHFACE", 
                                            time_error_loss=True, truth_parameter=['bpm', 'sdnn'])
 
 inp = model.input   # input placeholder

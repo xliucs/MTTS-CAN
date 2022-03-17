@@ -107,6 +107,9 @@ def sort_dataFile_list_(data_dir, subTrain, database_name, trainMode):
         taskList = [0, 1, 2, 3]
         final = dataFile_COHFACE(data_dir, taskList, subTrain, trainMode)
         final = list(itertools.chain(*final))
+    elif database_name == "UBFC":
+        final = dataFile_UBFC(data_dir, taskList, subTrain, trainMode)
+        final = list(itertools.chain(*final))
     elif database_name == "MIX":
         for database in subTrain.keys():
             final = []
@@ -172,6 +175,20 @@ def dataFiles_UBFC_PHYS(data_dir, subTrain, train, mode):
                 final.append(x)
     return final
 
+def dataFile_UBFC(data_dir, train):
+    final = []
+    if train:
+        x = glob.glob(os.path.join(data_dir,'1)Training/UBFC', "**/", 'dataFile.hdf5'), recursive=True)
+        x = sorted(x)
+            #x = sorted(x, key=take_last_ele)
+        final.append(x)
+    else:
+        x = glob.glob(os.path.join(data_dir,'2)Validation/UBFC', "**/", 'dataFile.hdf5'), recursive=True)
+        x = sorted(x)
+            #x = sorted(x, key=take_last_ele)
+        final.append(x)
+    return final
+
 
 def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
     if database == "UBFC_PHYS":
@@ -181,8 +198,8 @@ def split_subj_(data_dir, database): # trennen der Daten innerhalb 1 Subjekts...
         subTrain = np.array(range(1, 33)).tolist()# 33)).tolist()
         subTest = np.array(range(32,41)).tolist() # 41)).tolist()
     elif database == "UBFC":
-        subTrain = np.array(range(1,49))
-        subTest = np.array([])
+        subTrain = np.array(range(1,34))
+        subTest = np.array([range(34,42)])
     else:
         print("This Database isn't implemented yet.")
     return subTrain, subTest

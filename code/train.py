@@ -73,7 +73,7 @@ parser.add_argument('-database', '--database_name', type=str,
 parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE") 
 parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE") 
 parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
-parser.add_argument('-ml', '--maxFrames_video', type=int, default=2500, help="frames")
+parser.add_argument('-ml', '--maxFrames_video', type=int, default=2050, help="frames")
 parser.add_argument('-p', '--parameter', default=None)
 
 args = parser.parse_args()
@@ -108,16 +108,16 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
     with strategy.scope():
         
         if args.temporal == 'CAN' or args.temporal == 'MT_CAN':
-            args.batch_size = 32
+            args.batch_size = 16
         elif args.temporal == 'CAN_3D' or args.temporal == 'MT_CAN_3D':
-            args.batch_size = 12
+            args.batch_size = 2
         elif args.temporal == 'TS_CAN' or args.temporal == 'MTTS_CAN'\
             or  args.temporal == 'PTS_CAN':
-            args.batch_size = 16#32
+            args.batch_size = 12#32
         elif args.temporal == 'PPTS_CAN':
             args.batch_size = 2
         elif args.temporal == 'Hybrid_CAN' or args.temporal == 'MT_Hybrid_CAN':
-            args.batch_size = 4# 16
+            args.batch_size = 2# 16
         else:
             raise ValueError('Unsupported Model Type!')
 
@@ -350,11 +350,15 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
 
         training_generator = DataGenerator(path_of_video_tr, maxLen_video, (img_rows, img_cols),
                                            batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                           temporal=args.temporal, respiration=args.respiration, shuffle=False)
+                                           temporal=args.temporal, respiration=args.respiration, shuffle=False,
+                                           database_name=args.database_name, time_error_loss=timeError,
+                                           truth_parameter=args.parameter)
 
         validation_generator = DataGenerator(path_of_video_test, maxLen_video, (img_rows, img_cols),
                                              batch_size=args.batch_size, frame_depth=args.frame_depth,
-                                             temporal=args.temporal, respiration=args.respiration, shuffle=False)
+                                             temporal=args.temporal, respiration=args.respiration, shuffle=False,
+                                             database_name=args.database_name, time_error_loss=timeError,
+                                            truth_parameter=args.parameter)
 
         yptrain = model.predict(training_generator, verbose=1)
         scipy.io.savemat(checkpoint_folder + '/yptrain_best_' + '_cv' + str(cv_split) + '.mat',
