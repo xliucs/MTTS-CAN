@@ -108,7 +108,7 @@ def sort_dataFile_list_(data_dir, subTrain, database_name, trainMode):
         final = dataFile_COHFACE(data_dir, taskList, subTrain, trainMode)
         final = list(itertools.chain(*final))
     elif database_name == "UBFC":
-        final = dataFile_UBFC(data_dir, taskList, subTrain, trainMode)
+        final = dataFile_UBFC(data_dir, trainMode)
         final = list(itertools.chain(*final))
     elif database_name == "MIX":
         for database in subTrain.keys():
