@@ -94,8 +94,10 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         truth_path = sample_data_path.replace(".avi", "_dataFile.hdf5")   # akutell für COHACE...
     elif(str(sample_data_path).find("UBFC-PHYS") > 0):
         truth_path = sample_data_path.replace("vid_", "").replace(".avi","_dataFile.hdf5")
+    elif(str(sample_data_path).find("UBFC") > 0):
+        truth_path = sample_data_path.replace("vid.avi", "dataFile.hdf5")
     else:
-        return("Error in finding the ground truth signal...")
+        return print("Error in finding the ground truth signal...")
 
     gound_truth_file = h5py.File(truth_path, "r")
     pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
@@ -123,6 +125,10 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
             nameStr += item + "-"
     elif(str(sample_data_path).find("UBFC-PHYS") > 0):
         nameStr = str(nameStrAll[5]).replace("vid", "").replace(".avi", "")
+    elif(str(sample_data_path).find("UBFC") > 0):
+        nameStr = str(nameStrAll[7])
+    else:
+        raise ValueError
 
      ########## Plot ##################
     peaks_pred_new = []
@@ -224,20 +230,27 @@ if __name__ == "__main__":
         split = dir.split("\\")
         test_names.append(split[len(split)-1])
     batch_size = 8
-    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
-    "D:/Databases/1)Training/COHFACE/10/2/data.avi", "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi",
-    "D:/Databases/1)Training/COHFACE/6/0/data.avi",
-    "D:/Databases/1)Training/UBFC-PHYS/s13/vid_s13_T3.avi",
+    # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
+    # "D:/Databases/1)Training/COHFACE/10/2/data.avi", "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi",
+    # "D:/Databases/1)Training/COHFACE/6/0/data.avi",
+    # "D:/Databases/1)Training/UBFC-PHYS/s13/vid_s13_T3.avi",
     
-    "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
-    "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
+    # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
+    # "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
+    # "D:/Databases/2)Validation/COHFACE/34/2/data.avi"] 
+    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
+    "D:/Databases/1)Training/COHFACE/10/2/data.avi", "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject3/vid.avi",
+    "D:/Databases/1)Training/COHFACE/6/0/data.avi",
+    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject15/vid.avi",
+    
+    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject34/vid.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject38/vid.avi",
+    "D:/Databases/2)Validation/COHFACE/38/0/data.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject41/vid.avi",
     "D:/Databases/2)Validation/COHFACE/34/2/data.avi"] 
-   
     
     # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
-    test_names = ['Hybrid_CAN_COHFACE'] #'_CAN_COHFACE', 
+    test_names = ['3D_CAN_COHFACE', 'Hybrid_CAN_COHFACE', 'CAN_COHFACE', '3D_CAN_COHFACE-lr', 'TS_CAN_negPea', 'TS_CAN'] #'_', 
     # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
-    save_dir = "D:/Databases/5)Evaluation/Comparison_basicMOdels"
+    save_dir = "D:/Databases/5)Evaluation/Comparison_basicModels2"
 
     #test_names = ["TS_CAN_UBFC_new"]#[ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
     print("Models: ", test_names)

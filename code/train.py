@@ -26,8 +26,8 @@ from pre_process import split_subj_, sort_dataFile_list_, collect_subj
 np.random.seed(100)  # for reproducibility
 print("START!")
 list_gpu = tf.config.list_physical_devices('GPU')
-#tf.config.experimental.set_memory_growth(list_gpu[0], enable=True)
-#tf.config.experimental.set_memory_growth(list_gpu[1], enable=True)
+tf.config.experimental.set_memory_growth(list_gpu[0], enable=True)
+tf.config.experimental.set_memory_growth(list_gpu[1], enable=True)
 print(list_gpu)
 tf.keras.backend.clear_session()
 tf.autograph.set_verbosity(10)
