@@ -79,7 +79,7 @@ During the inference, the program will generate a sample pre-processed frame. Pl
 ## Requirements
 
 
-Tensorflow 2.0+
+Tensorflow 2.2-2.4
 
 
 `conda create -n tf-gpu tensorflow-gpu cudatoolkit=10.1` -- this command takes care of both CUDA and TF environments. 
