@@ -1,4 +1,5 @@
 from aifc import Error
+from operator import mod
 import numpy as np
 import scipy.io
 import xlsxwriter
@@ -13,6 +14,8 @@ import pandas as pd
 from sklearn import metrics
 import scipy.stats as sc
 from glob import glob
+import tensorflow as tf
+from tensorflow.python.framework import ops
 
 import heartpy as hp
 
@@ -42,6 +45,7 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     img_cols = 36
     frame_depth = 10
     batch_size = 100
+    model_checkpoint = None
     try:
         model_checkpoint = os.path.join(path_results, test_name, "cv_0_epoch24_model.hdf5")
     except:
@@ -55,9 +59,8 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     if model_name == "PPTS_CAN":
         dXsub_len = (dXsub.shape[0] // (frame_depth*10))  * (frame_depth*10)
         dXsub = dXsub[:dXsub_len, :, :, :]
-        
+    
     else: 
-        a = dXsub.shape[0] // frame_depth
         dXsub_len = (dXsub.shape[0] // frame_depth)  * frame_depth
         dXsub = dXsub[:dXsub_len, :, :, :]
     
@@ -66,12 +69,18 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     elif model_name == "3D_CAN":
         model = CAN_3D(frame_depth, 32, 64, (img_rows, img_cols, frame_depth, 3))
         dXsub = prepare_3D_CAN(dXsub)
+        dXsub_len = (dXsub.shape[0] // (frame_depth))  * (frame_depth)
+        dXsub = dXsub[:dXsub_len, :, :, :,:]
     elif model_name == "CAN":
         model = CAN(32, 64, (img_rows, img_cols, 3))
     elif model_name == "Hybrid_CAN":
         model = Hybrid_CAN(frame_depth, 32, 64, (img_rows, img_cols, frame_depth, 3),
                             (img_rows, img_cols, 3))
         dXsub1, dXsub2 = prepare_Hybrid_CAN(dXsub)
+        dXsub_len1 = (dXsub1.shape[0] // (frame_depth))  * (frame_depth)
+        dXsub1 = dXsub1[:dXsub_len1, :, :, :,:]
+        dXsub_len2 = (dXsub2.shape[0] // (frame_depth))  * (frame_depth)
+        dXsub2 = dXsub2[:dXsub_len2, :, :, :]
     elif model_name == "PTS_CAN":
         model = PTS_CAN(frame_depth, 32, 64, (img_rows, img_cols, 3))
     elif model_name == "PPTS_CAN":
@@ -79,15 +88,22 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     else: 
         raise NotImplementedError
 
+
     model.load_weights(model_checkpoint)
     if model_name == "3D_CAN":
-        yptest = model.predict((dXsub[:, :, :,: , :3], dXsub[:, :, :, : , -3:]), batch_size=batch_size, verbose=1)
+        yptest = model.predict((dXsub[:, :, :,: , :3], dXsub[:, :, :, : , -3:]))
+        #yptest = model((dXsub[:, :, :,: , :3], dXsub[:, :, :, : , -3:]), training=False)
     elif model_name == "Hybrid_CAN":
-        yptest = model.predict((dXsub1, dXsub2), batch_size=batch_size, verbose=1)
+        #yptest = model.predict((dXsub1, dXsub2), batch_size=batch_size, verbose=1)
+        yptest = model.predict((dXsub1, dXsub2))
     else:
-        yptest = model.predict((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]), batch_size=batch_size, verbose=1)
-    if model_name != "PTS_CAN" and model_name != "PPTS_CAN":
+        yptest = model((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]), training=False) #, verbose=1)
+       # yptest = model.predict((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]))
+    if model_name == "3D_CAN" or model_name == "Hybrid_CAN":
+        pulse_pred = yptest[:,0]
+    elif model_name != "PTS_CAN" and model_name != "PPTS_CAN":
         pulse_pred = yptest
+        
     else:
         pulse_pred = yptest[0]
      
@@ -98,7 +114,7 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     
     ##### ground truth data resampled  #######
     if(str(sample_data_path).find("COHFACE") > 0):
-        truth_path = sample_data_path.replace(".avi", "_dataFile.hdf5")   # akutell für COHACE...
+        truth_path = sample_data_path.replace(".avi", "_dataFile.hdf5")
     elif(str(sample_data_path).find("UBFC-PHYS") > 0):
         truth_path = sample_data_path.replace("vid_", "").replace(".avi","_dataFile.hdf5")
     elif(str(sample_data_path).find("UBFC") > 0):
@@ -147,25 +163,25 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         if (peak > 400 and peak <700):
             peaks_truth_new.append(peak-400)
     plt.figure() #subplot(211)
-    plt.plot(pulse_pred[400:700], label='predicted PPG')
-    plt.plot(peaks_truth_new, pulse_truth[400:700][peaks_truth_new], "x")
-    plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "o")
-    plt.title('PPG prediction with ground truth signal')
+    plt.plot(pulse_pred[400:700], "#E6001A", label='rPPG signal')
+    plt.plot(peaks_truth_new, pulse_truth[400:700][peaks_truth_new], "x", color="#005AA9")
+    plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "x", color ='#E6001A')
+    plt.title('rPPG signal with ground truth')
     plt.ylabel("normalized Signal [a.u.]")
     plt.xlabel("time (samples)")
-    plt.plot(pulse_truth[400:700], label='ground truth')
+    plt.plot(pulse_truth[400:700], '#005AA9', linewidth=0.9, label='ground truth')
     plt.legend()
-    plt.savefig(nameStr + "_both")
+    plt.savefig(nameStr + "_both.svg", format="svg")
 
     plt.figure()
     plt.subplot(211)
-    plt.plot(pulse_truth[400:700], label='Ground truth')
-    plt.plot(peaks_truth_new, pulse_truth[400:700][peaks_truth_new], "x")
+    plt.plot(pulse_truth[400:700],"#004E8A", label='Ground truth')
+    plt.plot(peaks_truth_new, pulse_truth[400:700][peaks_truth_new], "x", color="#004E8A")
     plt.ylabel("normalized Signal [a.u.]")
     plt.title('Ground truth')
     plt.subplot(212)
-    plt.plot(pulse_pred[400:700], label='Prediction')
-    plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "x")
+    plt.plot(pulse_pred[400:700], "#004E8A",label='Prediction')
+    plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new],"x", color="#004E8A")
     plt.title("Predicted rPPG")
     plt.ylabel("normalized Signal [a.u.]")
     plt.xlabel("time (samples)")
@@ -183,6 +199,7 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     ######### Metrics ##############
     # MSE:
     MAE = metrics.mean_absolute_error(pulse_truth, pulse_pred)
+    MSE = metrics.mean_squared_error(pulse_truth, pulse_pred)
     # RMSE:
     RMSE = metrics.mean_squared_error(pulse_truth, pulse_pred, squared=False)
     # Pearson correlation:
@@ -230,13 +247,12 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         col += 1
    
 if __name__ == "__main__":
-    path_results = "D:/Databases/4)Results/Version4"
-    dir_names = glob(path_results + "*")
+    path_results = "D:/Databases/4)Results/Version4/TS_Databases"
+    dir_names = glob(path_results + "/*")
     test_names = []
     for dir in dir_names:
         split = dir.split("\\")
         test_names.append(split[len(split)-1])
-    batch_size = 8
     # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
     # "D:/Databases/1)Training/COHFACE/10/2/data.avi", "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi",
     # "D:/Databases/1)Training/COHFACE/6/0/data.avi",
@@ -245,39 +261,58 @@ if __name__ == "__main__":
     # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi", "D:/Databases/2)Validation/UBFC-PHYS/s44/vid_s44_T1.avi",
     # "D:/Databases/2)Validation/COHFACE/38/0/data.avi", "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
     # "D:/Databases/2)Validation/COHFACE/34/2/data.avi"] 
-    video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
-    "D:/Databases/1)Training/COHFACE/10/2/data.avi", "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject3/vid.avi",
-    "D:/Databases/1)Training/COHFACE/6/0/data.avi",
-    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject15/vid.avi",
-    
-    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject34/vid.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject38/vid.avi",
-    "D:/Databases/2)Validation/COHFACE/38/0/data.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject41/vid.avi", "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
-    #video_path =["D:/Databases/1)Training/COHFACE/5/1/data.avi"] 
-    
     # video_path = ["D:/Databases/1)Training/COHFACE/5/1/data.avi",
-    test_names = ['TS_CAN_UBFCrPPG'] #'_', 
-    # "D:/Databases/2)Validation/UBFC-PHYS/s40/vid_s40_T2.avi"]
-    save_dir = "D:/Databases/5)Evaluation/Comparison_Databases"
-
-    #test_names = ["TS_CAN_UBFC_new"]#[ "3D_CAN_MIX", "TS_CAN_MIX_2GPU","Hybrid_CAN_MIX_new",  "CAN_MIX_2GPU"]
-    print("Models: ", test_names)
+    # "D:/Databases/1)Training/COHFACE/10/2/data.avi", "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject3/vid.avi",
+    # "D:/Databases/1)Training/COHFACE/6/0/data.avi",
+    # "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject15/vid.avi",
     
+    # "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject34/vid.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject38/vid.avi",
+    # "D:/Databases/2)Validation/COHFACE/38/0/data.avi",  "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject41/vid.avi", 
+    # "D:/Databases/2)Validation/COHFACE/34/2/data.avi"]
+
+    video_path = [\
+    "D:/Databases/1)Training/COHFACE/5/1/data.avi",
+    "D:/Databases/1)Training/COHFACE/10/2/data.avi", 
+    "D:/Databases/2)Validation/COHFACE/38/0/data.avi",
+
+    "D:/Databases/1)Training/UBFC-PHYS/s5/vid_s5_T1.avi",
+    "D:/Databases/1)Training/UBFC-PHYS/s13/vid_s13_T3.avi",
+    "D:/Databases/2)Validation/UBFC-PHYS/s38/vid_s38_T1.avi",
+
+    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject3/vid.avi",
+    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject9/vid.avi", 
+    "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject40/vid.avi"]
+    
+    #test_names = ['3D_CAN_COHFACE-lr']#, 'CAN_COHFACE', 'Hybrid_CAN_COHFACE'] #'_',
+    #test_names = ['TS_CAN_COHFACE_2GPU'] 
+
+    save_dir = "D:/Databases/5)Evaluation/Test"
+    print("Models: ", test_names)
+
    
     for test_name in test_names:
+        tf.keras.backend.clear_session() 
+        tf.autograph.set_verbosity(10)
+        ops.reset_default_graph()
         print("Current Modelname: ", test_name)
         if str(test_name).find("3D_CAN") >=0:
             model_name = "3D_CAN"
+            continue
         elif str(test_name).find("Hybrid_CAN") >= 0:
             model_name = "Hybrid_CAN"
-        elif str(test_name).find("TS_CAN") >= 0:
-            model_name = "TS_CAN"
+            continue
         elif str(test_name).find("PPTS") >= 0:
             model_name = "PPTS_CAN"
+            continue
         elif str(test_name).find("PTS") >= 0:
             model_name = "PTS_CAN"
+            continue
+        elif str(test_name).find("TS_CAN") >= 0:
+            model_name = "TS_CAN"
         else:
             if str(test_name).find("CAN") >= 0:
                 model_name = "CAN"
+                continue
             else: 
                 raise Error("Model not found...")
                 
@@ -292,6 +327,7 @@ if __name__ == "__main__":
         workbook = xlsxwriter.Workbook(test_name + ".xlsx")
         for vid in video_path:
             predict_vitals(workbook, test_name, model_name, vid, path_results)
+        print("Ready with this model")
         workbook.close()
 
 #python code/predict_vitals_new.py --video_path "D:\Databases\1)Training\COHFACE\1\1\data.avi" --trained_model ./cv_0_epoch24_model.hdf5

@@ -3,6 +3,7 @@ Models for Multi-Task Temporal Shift Attention Networks for On-Device Contactles
 Author: Xin Liu
 further developed: Sarah Quehl
 '''
+from re import T
 from numpy import float32
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
@@ -98,11 +99,7 @@ class ownLayer_parameter(tf.keras.layers.Layer):
     def get_rr(self, y):
         # y: (N,1)
         fs = 20
-        # def fs_COHFACE():
-        #     return 20
-        # def fs_UBFC():
-        #     return tf.cast(35.138)
-        # fs = tf.cond(tf.size(y) > 1300, )
+        fs = tf.cond(tf.less(tf.shape(tf.reshape(y, (-1,))),tf.convert_to_tensor(1300)), lambda:  tf.cast(20, dtype=tf.int64), lambda:  tf.cast(25, dtype=tf.int64))
 
         indices = tf.where(tf.equal(tf.reshape(y, (-1,)),1))
         peak_locations = tf.squeeze(indices)

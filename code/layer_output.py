@@ -2,7 +2,7 @@
 
 import os
 from sklearn.preprocessing import MinMaxScaler
-from model import PPTS_CAN, PTS_CAN, TS_CAN
+from model import CAN_3D, PPTS_CAN, PTS_CAN, TS_CAN
 from tensorflow import keras
 from keras import backend as K
 from data_generator import DataGenerator
@@ -15,15 +15,15 @@ def gaussian_loss(y_true, y_pred):
     y_pred = tf.reshape(y_pred, (-1,))
     return -tf.reduce_sum(tf.abs(y_true*y_pred))
 
-path_of_video_tr = ["D:/Databases/1)Training/COHFACE/2/0/data_dataFile.hdf5"]#,"D:/Databases/1)Training/COHFACE/2/1/data_dataFile.hdf5"]
+path_of_video_tr = ["D:/Databases/1)Training/COHFACE/5/1/data_dataFile.hdf5"]#,"D:/Databases/1)Training/COHFACE/2/1/data_dataFile.hdf5"]
                   #  "D:/Databases/1)Training/COHFACE/1/2/data_dataFile.hdf5","D:/Databases/1)Training/COHFACE/1/3/data_dataFile.hdf5"]
 
-model = PTS_CAN(10, 32, 64, (36,36,3),
-                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128)#, parameter=['bpm', 'sdnn'])
+model = PPTS_CAN(10, 32, 64, (36,36,3),
+                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128, parameter=['bpm', 'sdnn'])
 training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
                                            batch_size=1, frame_depth=10,
-                                           temporal="PTS_CAN", respiration=False, database_name="COHFACE", 
-                                           time_error_loss=True, truth_parameter=['bpm', 'sdnn'])
+                                           temporal="PPTS_CAN", respiration=False, database_name="COHFACE", 
+                                           time_error_loss=False, truth_parameter=['bpm', 'sdnn'])
 
 inp = model.input   # input placeholder
 model.summary()
