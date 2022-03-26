@@ -271,8 +271,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             loss3 = MAPE_parameter_loss
             loss_weights3 = 1
                    
-            losses = {"output_1": loss1, "output_2": loss2, "output_3": loss3}
-            loss_weights = {"output_1": loss_weights1, "output_2": loss_weights2, "output_3": loss_weights3}
+            losses = {"output_1": loss1, "output_3": loss3}#"output_2": loss2
+            loss_weights = {"output_1": loss_weights1, "output_3": loss_weights3}# "output_2": loss_weights2,
             model.compile(loss=losses, loss_weights=loss_weights, optimizer=optimizer)
         
         else:
