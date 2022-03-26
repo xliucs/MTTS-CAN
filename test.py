@@ -128,55 +128,156 @@ def preprocess_raw_video(videoFilePath, dim=36):
     return dXsub, fps
 
 import ast
-# print(loss)
-subTrain = np.array(range(1,34))
-subTest = np.array([range(34,42)])
-print(subTrain)
-print("JKBJKBJB:",subTest)
-#path = "D:/Databases/1)Training/COHFACE/1/0/data_dataFile.hdf5"
-#path = "D:/Databases/1)Training/UBFC-PHYS/s6/s6_T1_dataFile.hdf5"
-#vid = "D:/Databases/1)Training/UBFC-PHYS/s6/vid_s6_T1.avi"
+import scipy.signal as ss
+import scipy.fft as sf
 
-path = "D:/Databases/UBFC/subject33/ground_truth.txt"
-test = open(path, 'r').read()
-test = str(test).split("  ")
-test = test[1:]
-print(len(test))
-results = list(map(float, test[0: int(len(test)/3)]))
 
-plt.plot(results)
-plt.show()
+
 
 #dxSub = preprocess_raw_video(vid, 36)
-#path = "D:/Databases/1)Training/COHFACE/1/0/data_dataFile.hdf5"
+path = "D:/Databases/1)Training/COHFACE/2/0/data_dataFile.hdf5"
 hf = h5py.File(path, 'r')
-vidData = hf['parameter']
-numer = np.array(vidData)
-test2 = ast.literal_eval(str(numer))
-bpm = test2["bpm"]
-fs = 35
+# vidData = hf['parameter']
+# numer = np.array(vidData)
+# test2 = ast.literal_eval(str(numer))
+# bpm = test2["bpm"]
+# fs = 35
 
-peak_truth = np.array(hf['peaklist'])
-ibi_arr = []
-for peak in range(0,len(peak_truth)-1):
-    ibi = ((peak_truth[peak+1] - peak_truth[peak])/fs)*1000
-    print(ibi)
-    if ibi<1500 and ibi > 333:
-        ibi_arr.append(ibi)
+# peak_truth = np.array(hf['peaklist'])
+# ibi_arr = []
+# for peak in range(0,len(peak_truth)-1):
+#     ibi = ((peak_truth[peak+1] - peak_truth[peak])/fs)*1000
+#     print(ibi)
+#     if ibi<1500 and ibi > 333:
+#         ibi_arr.append(ibi)
 
-mean = np.mean(ibi_arr)
-HR = 60000/mean
-diff = ibi_arr - mean
-test = diff **2
-sdnn = np.sqrt(1/(len(diff)-1)*np.sum(diff**2))
+# mean = np.mean(ibi_arr)
+# HR = 60000/mean
+# diff = ibi_arr - mean
+# test = diff **2
+# sdnn = np.sqrt(1/(len(diff)-1)*np.sum(diff**2))
 
-print(ibi_arr)
-pulseDiscrete = np.array(hf['pulse'])
-#peaks = np.array(hf['peaklist'])
-hf = pd.read_csv(path)
-pulse = np.array(hf)
+# print(ibi_arr)
+RR = np.array(hf['pulse'])
+""" plt.plot(RR)
+plt.show() """
 
-plt.plot(pulse)
+a = np.fft.fft(RR)
+N = int(len(a)/2+1)
+a[N-4:N+3]
+LF = 0
+
+print(a)
+plt.plot(RR)
+plt.show()
+
+# for number in a:
+#     print(number.real)
+#     if number.real >= 0.04 and number.real <= 0.15:
+#         LF += number.imag
+
+# print("Berechnet: ", LF)
+# print("TRuth:  ", np.array(hf['parameter']))
+
+dt = 0.05
+fa = 1.0/dt # scan frequency
+X = np.linspace(0, fa/2, N, endpoint=True)
+X[:4]
+print('dt=%.5fs (Sample Time)' % dt)
+print('fa=%.2fHz (Frequency)' % fa)
+
+hann = np.hanning(len(RR))
+
+Yhann = np.fft.fft(hann*RR)
+
+plt.figure(figsize=(7,3))
+plt.subplot(121)
+plt.plot(RR)
+plt.title('Time Domain Signal')
+plt.ylim(np.min(RR)*3, np.max(RR)*3)
+plt.xlabel('Time ($s$)')
+plt.ylabel('Amplitude ($Unit$)')
+
+plt.subplot(122)
+plt.plot(X, 2.0*np.abs(Yhann[:N])/N)
+plt.title('Frequency Domain Signal')
+plt.xlabel('Frequency ($Hz$)')
+plt.ylabel('Amplitude ($Unit$)')
+
+plt.show()
+
+
+
+
+t = np.linspace(0, 2*np.pi, 1000, endpoint=True)
+f = 3.0 # Frequency in Hz
+A = 100.0 # Amplitude in Unit
+s = A * np.sin(2*np.pi*f*t) # Signal
+
+
+
+Y = np.fft.fft(s)
+N = int(len(Y)/2+1)
+Y[N-4:N+3]
+
+
+dt = t[1] - t[0]
+fa = 1.0/dt # scan frequency
+print('dt=%.5fs (Sample Time)' % dt)
+print('fa=%.2fHz (Frequency)' % fa)
+
+X = np.linspace(0, fa/2, N, endpoint=True)
+X[:4]
+
+hann = np.hanning(len(s))
+
+Yhann = np.fft.fft(hann*s)
+
+plt.figure(figsize=(7,3))
+plt.subplot(121)
+plt.plot(t,s)
+plt.title('Time Domain Signal')
+plt.ylim(np.min(s)*3, np.max(s)*3)
+plt.xlabel('Time ($s$)')
+plt.ylabel('Amplitude ($Unit$)')
+
+plt.subplot(122)
+plt.plot(X, 2.0*np.abs(Yhann[:N])/N)
+plt.title('Frequency Domain Signal')
+plt.xlabel('Frequency ($Hz$)')
+plt.ylabel('Amplitude ($Unit$)')
+
+plt.annotate("FFT",
+            xy=(0.0, 0.1), xycoords='axes fraction',
+            xytext=(-0.8, 0.2), textcoords='axes fraction',
+            size=30, va="center", ha="center",
+            arrowprops=dict(arrowstyle="simple",
+                            connectionstyle="arc3,rad=0.2"))
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+# plt.pcolormesh(t, f, Sxx, shading='gouraud')
+
+# plt.ylabel('Frequency [Hz]')
+
+# plt.xlabel('Time [sec]')
+
+# plt.show()
+
+f, Pxx_den = ss.periodogram(RR)
+plt.semilogy(f, Pxx_den)
+#plt.ylim([1e-7, 1e2])
+plt.xlabel('frequency [Hz]')
+plt.ylabel('PSD [V**2/Hz]')
 plt.show()
 
 #working_data, measures = hp.process(pulse.reshape(-1,), 35.14, calc_freq=True)

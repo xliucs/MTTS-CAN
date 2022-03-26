@@ -98,8 +98,8 @@ class ownLayer_parameter(tf.keras.layers.Layer):
         
     def get_rr(self, y):
         # y: (N,1)
-        fs = 20
-        fs = tf.cond(tf.less(tf.shape(tf.reshape(y, (-1,))),tf.convert_to_tensor(1300)), lambda:  tf.cast(20, dtype=tf.int64), lambda:  tf.cast(25, dtype=tf.int64))
+        fs = 50
+        fs = tf.cond(tf.less(tf.shape(tf.reshape(y, (-1,))),tf.convert_to_tensor(1300)), lambda:  tf.cast(50, dtype=tf.int64), lambda:  tf.cast(40, dtype=tf.int64))
 
         indices = tf.where(tf.equal(tf.reshape(y, (-1,)),1))
         peak_locations = tf.squeeze(indices)
@@ -124,7 +124,7 @@ class ownLayer_parameter(tf.keras.layers.Layer):
         return tf.math.reduce_std(rr)   
 
     def get_config(self):
-        config = super(ownLayer_binaryPeak, self).get_config()
+        config = super(ownLayer_parameter, self).get_config()
         return config
 
 # %%

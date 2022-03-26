@@ -7,7 +7,6 @@ Author: Xin Liu, Daniel McDuff
 from __future__ import print_function
 
 import argparse
-import itertools
 import json
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
@@ -26,8 +25,8 @@ from pre_process import split_subj_, sort_dataFile_list_, collect_subj
 np.random.seed(100)  # for reproducibility
 print("START!")
 list_gpu = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(list_gpu[0], enable=True)
-tf.config.experimental.set_memory_growth(list_gpu[1], enable=True)
+#tf.config.experimental.set_memory_growth(list_gpu[0], enable=True)
+#tf.config.experimental.set_memory_growth(list_gpu[1], enable=True)
 print(list_gpu)
 tf.keras.backend.clear_session()
 tf.autograph.set_verbosity(10)
@@ -193,6 +192,8 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
                                   nb_dense=args.nb_dense)
         else:
             raise ValueError('Unsupported Model Type!')
+        
+        model.summary()
 
         optimizer = adadelta_v2.Adadelta(learning_rate=args.lr)
         if args.temporal == 'MTTS_CAN' or args.temporal == 'MT_Hybrid_CAN' or args.temporal == 'MT_CAN_3D' or \

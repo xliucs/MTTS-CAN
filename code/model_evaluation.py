@@ -247,8 +247,8 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
         col += 1
    
 if __name__ == "__main__":
-    path_results = "D:/Databases/4)Results/Version4/TS_Databases"
-    dir_names = glob(path_results + "/*")
+    path_results = "D:/Databases/4)Results/Version5"
+    dir_names = glob(path_results + "/P*")
     test_names = []
     for dir in dir_names:
         split = dir.split("\\")
@@ -283,10 +283,9 @@ if __name__ == "__main__":
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject9/vid.avi", 
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject40/vid.avi"]
     
-    #test_names = ['3D_CAN_COHFACE-lr']#, 'CAN_COHFACE', 'Hybrid_CAN_COHFACE'] #'_',
-    #test_names = ['TS_CAN_COHFACE_2GPU'] 
+    test_names = ['PPTS_CAN'] 
 
-    save_dir = "D:/Databases/5)Evaluation/Test"
+    save_dir = "D:/Databases/5)Evaluation/Comparison_newModels"
     print("Models: ", test_names)
 
    
@@ -306,7 +305,6 @@ if __name__ == "__main__":
             continue
         elif str(test_name).find("PTS") >= 0:
             model_name = "PTS_CAN"
-            continue
         elif str(test_name).find("TS_CAN") >= 0:
             model_name = "TS_CAN"
         else:
