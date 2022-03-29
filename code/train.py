@@ -167,6 +167,7 @@ def train(args, subTrain, subTest, cv_split, img_rows=36, img_cols=36):
             print('Using PPTS_CAN: with PeakLocation!')
             input_shape = (img_rows, img_cols, 3)
             args.parameter = str(args.parameter).split(",")
+            print(args.parameter)
             model = PPTS_CAN(args.frame_depth, args.nb_filters1, args.nb_filters2, input_shape,
                            dropout_rate1=args.dropout_rate1, dropout_rate2=args.dropout_rate2, nb_dense=args.nb_dense, parameter=args.parameter)
         elif args.temporal == 'MTTS_CAN':

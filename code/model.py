@@ -11,7 +11,6 @@ from tensorflow.python.keras.layers import Conv2D, Conv3D, Input, AveragePooling
     multiply, Dense, Dropout, Flatten, AveragePooling3D
 from tensorflow.python.keras.models import Model
 
-
 class Attention_mask(tf.keras.layers.Layer):
     def call(self, x):
         xsum = K.sum(x, axis=1, keepdims=True)
@@ -84,12 +83,14 @@ class ownLayer_binaryPeak(tf.keras.layers.Layer):
 class ownLayer_parameter(tf.keras.layers.Layer):
     def call(self, x, parameter):
         rr = self.get_rr(x)
+
         f_bpm = lambda: self.get_HR(tf.cast(rr, dtype=float32))
         f_sdnn = lambda: self.get_sdnn(tf.cast(rr, dtype=float32))
+        f_pnn50 = lambda: self.get_pNN50(tf.cast(rr, dtype=float32))
 
         result = []
         for item in parameter:
-            result_part = tf.case([(tf.equal(item,'bpm'), f_bpm), (tf.equal(item,'sdnn'), f_sdnn)], default=f_bpm)
+            result_part = tf.case([(tf.equal(item,'bpm'), f_bpm), (tf.equal(item,'sdnn'), f_sdnn), (tf.equal(item,'pnn50'), f_pnn50)], default=f_bpm)
             result.append(result_part)
 
         result = tf.convert_to_tensor(result)
@@ -121,7 +122,54 @@ class ownLayer_parameter(tf.keras.layers.Layer):
         return HR
 
     def get_sdnn(self, rr):
-        return tf.math.reduce_std(rr)   
+        return tf.math.reduce_std(rr) 
+
+    def get_pNN50(self, rr):
+        def tf_diff_axis_0(a):
+            return a[1:]-a[:-1]
+        rr_diff = tf_diff_axis_0(rr)
+
+        size = tf.cast(tf.reduce_sum(tf.ones(tf.size(rr))), dtype=tf.float32)
+
+        mask = (tf.greater(tf.abs(rr_diff),50))
+
+        mask = tf.cast(mask, dtype=tf.int32)
+        nn50 = tf.cast(tf.math.reduce_sum(mask), dtype=tf.float32)
+        pNN50 = nn50/size
+        return pNN50
+
+    def get_lf(self,rr):
+        #rr_x = tf.convert_to_tensor([1,2,3])
+        # rr_x = tf.cumsum(rr)
+        # resamp_factor = 4
+        # datalen = tf.cast((tf.shape(rr_x) - 1)*resamp_factor, dtype=tf.int64)
+        # rr_x_new = tf.linspace(tf.cast(rr_x[0], dtype=tf.int64), tf.cast(rr_x[-1], dtype=tf.int64), datalen)
+
+        # interpolation_func = UnivariateSpline(rr_x, rr, k=3)
+        # rr_interp = interpolation_func(rr_x_new)
+
+        # # RR-list in units of ms, with the sampling rate at 1 sample per beat
+        # dt = tf.reduce_mean(rr) / 1000  # in sec
+        # fs = 1 / dt  # about 1.1 Hz; 50 BPM would be 0.83 Hz, just enough to get the
+        # # max of the HF band at 0.4 Hz according to Nyquist
+        # fs_new = fs * resamp_factor
+
+        # # nperseg should be based on trade-off btw temporal res and freq res
+        # # default is 4 min to get about 9 points in the VLF band
+        # welch_wsize=240
+        # nperseg = welch_wsize * fs_new
+        # if nperseg >= tf.shape(rr_x_new):  # if nperseg is larger than the available data segment
+        #     nperseg = tf.shape(rr_x_new)  # set it to length of data segment to prevent scipy warnings
+        #     # as user is already informed through the signal length warning
+        #frq, psd = ss.welch(rr, fs=20)#, nperseg=nperseg)
+
+        # df = frq[1] - frq[0]
+
+        # lf= np.trapz(abs(psd[(frq >= 0.04) & (frq < 0.15)]), dx=df)
+        # hf_val = np.trapz(abs(psd[(frq >= 0.15) & (frq < 0.4)]), dx=df)
+        # lf_hf = lf /hf_val
+
+        return 1
 
     def get_config(self):
         config = super(ownLayer_parameter, self).get_config()

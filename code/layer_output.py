@@ -12,6 +12,7 @@ import numpy as np
 import h5py
 
 
+
 def gaussian_loss(y_true, y_pred):
     y_pred = tf.reshape(y_pred, (-1,))
     return -tf.reduce_sum(tf.abs(y_true*y_pred))
@@ -20,11 +21,11 @@ path_of_video_tr = ["D:/Databases/1)Training/COHFACE/5/1/data_dataFile.hdf5"]#,"
                   #  "D:/Databases/1)Training/COHFACE/1/2/data_dataFile.hdf5","D:/Databases/1)Training/COHFACE/1/3/data_dataFile.hdf5"]
 
 model = PPTS_CAN(10, 32, 64, (36,36,3),
-                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128, parameter=['bpm', 'sdnn'])
+                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128, parameter=['bpm', 'sdnn', 'pnn50'])
 training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
                                            batch_size=1, frame_depth=10,
                                            temporal="PPTS_CAN", respiration=False, database_name="COHFACE", 
-                                           time_error_loss=False, truth_parameter=['bpm', 'sdnn'])
+                                           time_error_loss=True, truth_parameter=['bpm', 'sdnn', 'pnn50'])
 
 inp = model.input   # input placeholder
 #model.summary()
@@ -39,14 +40,26 @@ output = model(test)
 
 
 ##################
-# path = "D:/Databases/1)Training/COHFACE/5/1/data_dataFile.hdf5"
-# hf = h5py.File(path, 'r')
-# data = np.array(hf["peaklist"])
-# # data_reshaped = tf.reshape(data, (1, -1, 1)) # (1, N, 1)
-# # max_pooled_in_tensor = tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
-# # maxima = tf.equal(data_reshaped, max_pooled_in_tensor) # (1, N, 1)
-# # maxima = tf.cast(maxima, tf.float32)
-# # maxima = tf.reshape(maxima, (-1,1))
+path = "D:/Databases/1)Training/COHFACE/5/1/data_dataFile.hdf5"
+hf = h5py.File(path, 'r')
+data = np.array(hf["pulse"])
+
+
+test1 = tfp.sts.Autoregressive(data)
+
+data = tf.reshape(tf.convert_to_tensor(data), (-1,1))
+data = tf.transpose(data)
+
+frq = tf.abs(tf.signal.stft(data, tf.size(data), 3))
+frq = tf.slice(frq, 1,tf.size(data)/2 )
+
+test = tf.squeeze(frq)
+
+b = tf.abs(test**2)/(2*20)
+
+plt.plot(b)
+plt.show()
+
 
 # # fs = 20
 # # indices = tf.where(tf.equal(tf.reshape(maxima, (-1,)),1))

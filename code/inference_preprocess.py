@@ -1,3 +1,4 @@
+from glob import glob
 from importlib import import_module
 import numpy as np
 import cv2
@@ -69,6 +70,57 @@ def preprocess_raw_video(videoFilePath, dim=36):
     #########################################################################
     # Plot an example of data after preprocess
     dXsub = np.concatenate((dXsub, Xsub), axis = 3)
+    return dXsub, fps
+
+def preprocess_raw_frames(framePath, dim=36):
+    ####### collect frames #########
+    frames = glob(framePath + "/*.jpg")
+    #########################################################################
+    # set up
+    i = 0
+    
+    totalFrames = int(len(frames)) # get total frame size
+    
+    Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)
+    
+    #########################################################################
+    # Crop each frame size into dim x dim
+    while i < totalFrames:
+        img = cv2.imread(frames[i])
+        #t.append(vidObj.get(cv2.CAP_PROP_POS_MSEC))# current timestamp in milisecond
+        vidLxL = cv2.resize(img_as_float(img), (dim, dim), interpolation = cv2.INTER_AREA)
+        #vidLxL = cv2.rotate(vidLxL, cv2.ROTATE_90_CLOCKWISE) # rotate 90 degree
+        vidLxL = cv2.cvtColor(vidLxL.astype('float32'), cv2.COLOR_BGR2RGB)
+        vidLxL[vidLxL > 1] = 1
+        vidLxL[vidLxL < (1/255)] = 1/255
+        Xsub[i, :, :, :] = vidLxL
+        i = i + 1
+    #plt.imshow(Xsub[0])
+    #plt.title('Sample Preprocessed Frame')
+    #plt.show()
+    #########################################################################
+    # Normalized Frames in the motion branch
+    normalized_len = totalFrames - 1
+
+    #print("normalized Len")
+    #print(normalized_len)
+    dXsub = np.zeros((normalized_len, dim, dim, 3), dtype = np.float32)
+    for j in range(normalized_len - 1):
+        dXsub[j, :, :, :] = (Xsub[j+1, :, :, :] - Xsub[j, :, :, :]) / (Xsub[j+1, :, :, :] + Xsub[j, :, :, :])
+    dXsub = dXsub / np.std(dXsub)
+    # plt.imshow(dXsub[0])
+    # plt.title('Sample Preprocessed Frame')
+    # plt.show()
+
+    #########################################################################
+    # Normalize raw frames in the apperance branch
+    Xsub = Xsub - np.mean(Xsub)
+    Xsub = Xsub  / np.std(Xsub)
+    Xsub = Xsub[:dXsub.shape[0], :, :, :] # -1
+    #########################################################################
+    # Plot an example of data after preprocess
+    dXsub = np.concatenate((dXsub, Xsub), axis = 3)
+    fps = 25
     return dXsub, fps
 
 def detrend(signal, Lambda):

@@ -7,11 +7,12 @@ import h5py
 import os
 import matplotlib.pyplot as plt
 from scipy.signal import butter
-from inference_preprocess import preprocess_raw_video, detrend
+from inference_preprocess import preprocess_raw_frames, preprocess_raw_video, detrend
 from sklearn.preprocessing import MinMaxScaler
 from sklearn import metrics
 import scipy.stats as sc
 from glob import glob
+from scipy import signal
 
 import heartpy as hp
 
@@ -82,7 +83,10 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
     old_database = "COH"
     for sample_data_path in video_path:
         print("path:  ",sample_data_path)
-        dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
+        if sample_data_path[-3:] == ".avi":
+            dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
+        else: 
+            dXsub, fs = preprocess_raw_frames(sample_data_path, dim=36)
         print('dXsub shape', dXsub.shape, "fs: ", fs)
         
         if model_name == "PPTS_CAN":
@@ -106,9 +110,13 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
             dXsub2 = dXsub2[:dXsub_len2, :, :, :]
             yptest = model.predict((dXsub1, dXsub2), verbose=1)
         else:
-            yptest = model.predict((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]), verbose=1)
-        if model_name != "PTS_CAN" and model_name != "PPTS_CAN":
+            yptest = model((dXsub[:, :, :, :3], dXsub[:, :, :, -3:]), training=False)
+        
+        if model_name == "3D_CAN" or model_name == "Hybrid_CAN":
+            pulse_pred = yptest[:,0]
+        elif model_name != "PTS_CAN" and model_name != "PPTS_CAN":
             pulse_pred = yptest
+            
         else:
             pulse_pred = yptest[0]
         
@@ -127,12 +135,32 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         elif(str(sample_data_path).find("UBFC") > 0):
             database_name = "UBFC"
             truth_path = sample_data_path.replace("vid.avi", "dataFile.hdf5")
+        elif(str(sample_data_path).find("BD4P") > 0):
+            database_name = "BD4P"
+            truth_path = sample_data_path + "/BP_mmHg.txt"
         else:
             return print("Error in finding the ground truth signal...")
+        if database_name != "BD4P":
+            gound_truth_file = h5py.File(truth_path, "r")
+            pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
+            pulse_truth = pulse_truth[0:dXsub_len]
+        else:
+            data = open(truth_path, 'r').read()
+            data = str(data).split("\n")
+            pulse_truth = np.array(list(map(float, data[0:-1])))
+            mms = MinMaxScaler()
+            mean = pulse_truth.mean()
+            std = np.std(pulse_truth)
+            upper_limit = mean + std*3
+            lower_limit = mean - std*3
+            for x in range(0, len(pulse_truth)):
+                if pulse_truth[x] > upper_limit:
+                    pulse_truth[x] = upper_limit
+                elif pulse_truth[x] < lower_limit:
+                    pulse_truth[x] = lower_limit
 
-        gound_truth_file = h5py.File(truth_path, "r")
-        pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
-        pulse_truth = pulse_truth[0:dXsub_len]
+            pulse_truth = np.array(signal.resample(pulse_truth, len(pulse_pred)))
+            pulse_truth = np.array(mms.fit_transform(pulse_truth.reshape(-1,1))).flatten() # normalization
         pulse_truth = detrend(np.cumsum(pulse_truth), 100)
         [b_pulse_tr, a_pulse_tr] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
         pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
@@ -144,7 +172,12 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
             pulse_truth = pulse_truth[:len(pulse_pred)]
         ########### Peaks ###########
         working_data_pred, measures_pred = hp.process(pulse_pred, fs, calc_freq=True)
+        plot =  hp.plotter(working_data_pred, measures_pred, show=False, title = 'Heart Rate Signal and Peak Detection')
+        plot.savefig("Test")
+
         working_data_truth, measures_truth = hp.process(pulse_truth, fs, calc_freq=True)
+        plot =  hp.plotter(working_data_truth, measures_truth, show=False, title = 'Heart Rate Signal and Peak Detection')
+        plot.savefig("Testpred")
         peaks_pred = working_data_pred['peaklist']
         peaks_truth = working_data_truth['peaklist']
 
@@ -158,36 +191,45 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         elif(str(sample_data_path).find("UBFC") > 0):
             nmr = str(sample_data_path).find("UBFC")
             nameStr = str(sample_data_path)[nmr + 17:].replace("\\", "-").replace("vid.avi", "")
+        elif(str(sample_data_path).find("BD4P") > 0):
+            nmr = str(sample_data_path).find("BD4P")
+            nameStr = str(sample_data_path)[nmr + 5:].replace("\\", "-")
         else:
             raise ValueError
         ########## Plot ##################
+        peaks_pred_new = []
+        for peak in peaks_pred:
+            if (peak > 400 and peak <700):
+                peaks_pred_new.append(peak-400)
+        peaks_truth_new = []
+        for peak in peaks_truth:
+            if (peak > 400 and peak <700):
+                peaks_truth_new.append(peak-400)
         plt.figure() #subplot(211)
-        plt.plot(pulse_pred, label='predicted PPG')
-        plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
-        plt.plot(peaks_pred, pulse_pred[peaks_pred], "o")
-        plt.title('PPG prediction with ground truth signal')
+        plt.plot(pulse_pred[400:700], "#E6001A", label='rPPG signal')
+        plt.plot(peaks_truth_new, pulse_truth[400:700][peaks_truth_new], "x", color="#005AA9")
+        plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "x", color ='#E6001A')
+        plt.title('rPPG signal with ground truth')
         plt.ylabel("normalized Signal [a.u.]")
         plt.xlabel("time (samples)")
-        plt.plot(pulse_truth, label='ground truth')
+        plt.plot(pulse_truth[400:700], '#005AA9', linewidth=0.9, label='ground truth')
         plt.legend()
-        name1 = database_name+nameStr + "_both.svg"
-        plt.savefig(name1, format='svg')
+        plt.savefig(database_name+ nameStr + "_both.svg", format="svg")
 
         plt.figure()
         plt.subplot(211)
-        plt.plot(pulse_truth, label='Ground truth')
-        plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
+        plt.plot(pulse_truth[400:700],"#004E8A", label='Ground truth')
+        plt.plot(peaks_truth_new, pulse_truth[400:700][peaks_truth_new], "x", color="#004E8A")
         plt.ylabel("normalized Signal [a.u.]")
         plt.title('Ground truth')
         plt.subplot(212)
-        plt.plot(pulse_pred, label='Prediction')
-        plt.plot(peaks_pred, pulse_pred[peaks_pred], "x")
+        plt.plot(pulse_pred[400:700], "#004E8A",label='Prediction')
+        plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new],"x", color="#004E8A")
         plt.title("Predicted rPPG")
         plt.ylabel("normalized Signal [a.u.]")
         plt.xlabel("time (samples)")
         plt.legend()
-        name2 =  database_name + nameStr + ".svg"
-        plt.savefig(name2, format='svg')
+        plt.savefig(database_name+ nameStr +".svg", format="svg")
 
         ########### IBI #############
         #ibi_truth = working_data_truth['RR_list_cor']
@@ -240,20 +282,26 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
    
 if __name__ == "__main__":
     path_results = "D:/Databases/4)Results/Version4/TS_Databases" #finalVersions"
-    data_dir = "D:/Databases/3)Testing/"
-    dir_names = glob(path_results + "*")
-    test_names = []
-    for dir in dir_names:
+    data_dir = "C:/Users/sarah/Desktop"#\F001"
+    #data_dir = "D:/Databases/3)Testing/"
+    modelDir_names = glob(path_results + "COHFACE/*")
+    modelDir_names += glob(path_results + "UBFC/*")
+    testModel_names = []
+    for dir in modelDir_names:
         split = dir.split("\\")
-        test_names.append(split[len(split)-1])
-    batch_size = 8
+        testModel_names.append(split[len(split)-1])
     
     video_path = glob(os.path.join(data_dir, "**/*", '*.avi'), recursive=True)
+    ### BD4P ####
+    new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
+    video_path = video_path + new_dirs
     
-    save_dir = "D:/Databases/5)Evaluation/finalEvaluation"
+    save_dir = "D:/Databases/5)Evaluation/Test"#finalEvaluation"
     
-    print("Models: ", test_names)
-    for test_name in test_names:
+
+    testModel_names = ["TS_CAN_MIX2"]
+    print("Models: ", testModel_names)
+    for test_name in testModel_names:
         print("Current Modelname: ", test_name)
         if str(test_name).find("3D_CAN") >=0:
             model_name = "3D_CAN"
