@@ -3,7 +3,7 @@ Models for Multi-Task Temporal Shift Attention Networks for On-Device Contactles
 Author: Xin Liu
 further developed: Sarah Quehl
 '''
-from re import T
+from re import L, T
 from numpy import float32
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
@@ -59,7 +59,7 @@ def TSM_Cov2D(x, n_frame, nb_filters=128, kernel_size=(3, 3), activation='tanh',
     x = Conv2D(nb_filters, kernel_size, padding=padding, activation=activation)(x)
     return x
 
-# own layer???
+# own layer:
 class ownLayer_binaryPeak(tf.keras.layers.Layer):
     def call(self, x):
         out = self.get_peaks(x)
@@ -87,10 +87,11 @@ class ownLayer_parameter(tf.keras.layers.Layer):
         f_bpm = lambda: self.get_HR(tf.cast(rr, dtype=float32))
         f_sdnn = lambda: self.get_sdnn(tf.cast(rr, dtype=float32))
         f_pnn50 = lambda: self.get_pNN50(tf.cast(rr, dtype=float32))
+        f_lfhf = lambda: self.get_lf_hf(tf.cast(rr, dtype=float32))
 
         result = []
         for item in parameter:
-            result_part = tf.case([(tf.equal(item,'bpm'), f_bpm), (tf.equal(item,'sdnn'), f_sdnn), (tf.equal(item,'pnn50'), f_pnn50)], default=f_bpm)
+            result_part = tf.case([(tf.equal(item,'bpm'), f_bpm), (tf.equal(item,'sdnn'), f_sdnn), (tf.equal(item,'pnn50'), f_pnn50), (tf.equal(item,'lf_hf'), f_lfhf)], default=f_bpm)
             result.append(result_part)
 
         result = tf.convert_to_tensor(result)
@@ -138,38 +139,30 @@ class ownLayer_parameter(tf.keras.layers.Layer):
         pNN50 = nn50/size
         return pNN50
 
-    def get_lf(self,rr):
-        #rr_x = tf.convert_to_tensor([1,2,3])
-        # rr_x = tf.cumsum(rr)
-        # resamp_factor = 4
-        # datalen = tf.cast((tf.shape(rr_x) - 1)*resamp_factor, dtype=tf.int64)
-        # rr_x_new = tf.linspace(tf.cast(rr_x[0], dtype=tf.int64), tf.cast(rr_x[-1], dtype=tf.int64), datalen)
+    def get_lf_hf(self,rr):
+        data = tf.reshape(rr, (-1,))
+        f_true = lambda: data
+        f_false = lambda: tf.convert_to_tensor([1], dtype=tf.float32)
 
-        # interpolation_func = UnivariateSpline(rr_x, rr, k=3)
-        # rr_interp = interpolation_func(rr_x_new)
+        def custom_func(input):
+            return tf.cast(tf.abs(tf.signal.rfft(data)), tf.float32)/tf.cast(tf.size(data),tf.float32)
+        data = tf.case([(tf.greater(tf.size(rr), 2),f_true), (tf.less(tf.size(rr), 2),f_false)])
 
-        # # RR-list in units of ms, with the sampling rate at 1 sample per beat
-        # dt = tf.reduce_mean(rr) / 1000  # in sec
-        # fs = 1 / dt  # about 1.1 Hz; 50 BPM would be 0.83 Hz, just enough to get the
-        # # max of the HF band at 0.4 Hz according to Nyquist
-        # fs_new = fs * resamp_factor
+        frq = tf.keras.layers.Lambda(custom_func)(data)
+        
+        #frq = tf.cast(tf.abs(tf.signal.rfft(data)), tf.float32)/tf.cast(tf.size(data),tf.float32)
+        dt = tf.math.reduce_mean(data) / 1000  # in sec
+        t = tf.cast(tf.range(0, tf.size(frq)), tf.float32)
+        t = tf.cast(t, tf.float32)/(tf.cast(dt, tf.float32)*tf.cast(tf.size(frq)*2, tf.float32))
 
-        # # nperseg should be based on trade-off btw temporal res and freq res
-        # # default is 4 min to get about 9 points in the VLF band
-        # welch_wsize=240
-        # nperseg = welch_wsize * fs_new
-        # if nperseg >= tf.shape(rr_x_new):  # if nperseg is larger than the available data segment
-        #     nperseg = tf.shape(rr_x_new)  # set it to length of data segment to prevent scipy warnings
-        #     # as user is already informed through the signal length warning
-        #frq, psd = ss.welch(rr, fs=20)#, nperseg=nperseg)
+        mask_lf = tf.cast(tf.logical_and(tf.greater_equal(t, 0.04), tf.less(t, 0.15)), tf.float32)
+        lf = tf.maximum(tf.reduce_sum(frq*mask_lf), 0.000001)
+        mask_hf = tf.cast(tf.logical_and(tf.greater_equal(t, 0.15), tf.less(t, 0.4)), tf.float32)
+        hf = tf.maximum(tf.reduce_sum(frq*mask_hf), 0.000001)
 
-        # df = frq[1] - frq[0]
+        lf_hf = lf/hf
 
-        # lf= np.trapz(abs(psd[(frq >= 0.04) & (frq < 0.15)]), dx=df)
-        # hf_val = np.trapz(abs(psd[(frq >= 0.15) & (frq < 0.4)]), dx=df)
-        # lf_hf = lf /hf_val
-
-        return 1
+        return lf_hf
 
     def get_config(self):
         config = super(ownLayer_parameter, self).get_config()
@@ -344,7 +337,8 @@ def PPTS_CAN(n_frame, nb_filters1, nb_filters2, input_shape, kernel_size=(3, 3),
     d11 = Dropout(dropout_rate2)(d10)
     out1 = Dense(1, name='output_1')(d11)
     out_peaks = ownLayer_binaryPeak(name='output_2')(out1)
-    out_params = ownLayer_parameter(name='output_3')(out_peaks, parameter)
+    out_params = ownLayer_parameter(trainable=False, name='output_3')(out_peaks, parameter)
+    #out_params = ownLayer_parameter(name='output_3')(out_peaks, parameter)
 
     model = Model(inputs=[diff_input, rawf_input], outputs=[out1, out_peaks, out_params])
     return model

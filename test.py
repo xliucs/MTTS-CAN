@@ -137,206 +137,77 @@ import scipy.fft as sf
 #dxSub = preprocess_raw_video(vid, 36)
 path = "D:/Databases/1)Training/COHFACE/2/0/data_dataFile.hdf5"
 hf = h5py.File(path, 'r')
-# vidData = hf['parameter']
-# numer = np.array(vidData)
-# test2 = ast.literal_eval(str(numer))
-# bpm = test2["bpm"]
-# fs = 35
 
-# peak_truth = np.array(hf['peaklist'])
-# ibi_arr = []
-# for peak in range(0,len(peak_truth)-1):
-#     ibi = ((peak_truth[peak+1] - peak_truth[peak])/fs)*1000
-#     print(ibi)
-#     if ibi<1500 and ibi > 333:
-#         ibi_arr.append(ibi)
+hr_data = np.array(hf['nn'])
 
-# mean = np.mean(ibi_arr)
-# HR = 60000/mean
-# diff = ibi_arr - mean
-# test = diff **2
-# sdnn = np.sqrt(1/(len(diff)-1)*np.sum(diff**2))
 
-# print(ibi_arr)
-RR = np.array(hf['pulse'])
-""" plt.plot(RR)
-plt.show() """
+hr_data = tf.convert_to_tensor(hr_data)
 
-a = np.fft.fft(RR)
-N = int(len(a)/2+1)
-a[N-4:N+3]
-LF = 0
+def tf_diff_axis_0(a):
+    return a[1:]-a[:-1]
+ibi_diff = tf_diff_axis_0(hr_data)
 
-print(a)
-plt.plot(RR)
+mask = (tf.greater(tf.abs(ibi_diff),50))
+mask.set_shape([None])
+
+mask = tf.cast(mask, dtype=tf.int32)
+nn50 = tf.math.reduce_sum(mask)
+
+rr_arr = tf.boolean_mask(ibi_diff, mask)
+
+print(nn50/tf.size(mask))
+print(np.array(hf['parameter']))
+
+
+
+
+from scipy.interpolate import UnivariateSpline
+
+working_data, measures = hp.process(hr_data, 20, calc_freq=True)
+
+rr_list = np.array(hf['nn'])
+
+rr_x = np.cumsum(rr_list)
+resamp_factor = 4
+datalen = int((len(rr_x) - 1)*resamp_factor)
+rr_x_new = np.linspace(int(rr_x[0]), int(rr_x[-1]), datalen)
+
+interpolation_func = UnivariateSpline(rr_x, rr_list, k=3)
+rr_interp = interpolation_func(rr_x_new)
+
+# RR-list in units of ms, with the sampling rate at 1 sample per beat
+dt = np.mean(rr_list) / 1000  # in sec
+fs = 1 / dt  # about 1.1 Hz; 50 BPM would be 0.83 Hz, just enough to get the
+# max of the HF band at 0.4 Hz according to Nyquist
+fs_new = fs * resamp_factor
+
+# nperseg should be based on trade-off btw temporal res and freq res
+# default is 4 min to get about 9 points in the VLF band
+welch_wsize=240
+nperseg = welch_wsize * fs_new
+if nperseg >= len(rr_x_new):  # if nperseg is larger than the available data segment
+    nperseg = len(rr_x_new)  # set it to length of data segment to prevent scipy warnings
+    # as user is already informed through the signal length warning
+frq, psd = ss.welch(rr_list, fs=fs)#, nperseg=nperseg)
+
+
+plt.plot(frq,psd)
 plt.show()
 
-# for number in a:
-#     print(number.real)
-#     if number.real >= 0.04 and number.real <= 0.15:
-#         LF += number.imag
+df = frq[1] - frq[0]
 
-# print("Berechnet: ", LF)
-# print("TRuth:  ", np.array(hf['parameter']))
-
-dt = 0.05
-fa = 1.0/dt # scan frequency
-X = np.linspace(0, fa/2, N, endpoint=True)
-X[:4]
-print('dt=%.5fs (Sample Time)' % dt)
-print('fa=%.2fHz (Frequency)' % fa)
-
-hann = np.hanning(len(RR))
-
-Yhann = np.fft.fft(hann*RR)
-
-plt.figure(figsize=(7,3))
-plt.subplot(121)
-plt.plot(RR)
-plt.title('Time Domain Signal')
-plt.ylim(np.min(RR)*3, np.max(RR)*3)
-plt.xlabel('Time ($s$)')
-plt.ylabel('Amplitude ($Unit$)')
-
-plt.subplot(122)
-plt.plot(X, 2.0*np.abs(Yhann[:N])/N)
-plt.title('Frequency Domain Signal')
-plt.xlabel('Frequency ($Hz$)')
-plt.ylabel('Amplitude ($Unit$)')
-
-plt.show()
+lf = 0
+for fs in range(0, len(frq)):
+    if(frq[fs]>= 0.04 and frq[fs]<0.15):
+        lf += psd[fs]
+print(lf)
+print(lf*df)
+lf= np.trapz(abs(psd[(frq >= 0.04) & (frq < 0.15)]), dx=df)
+hf_val = np.trapz(abs(psd[(frq >= 0.15) & (frq < 0.4)]), dx=df)
+lf_hf = lf /hf_val
 
 
-
-
-t = np.linspace(0, 2*np.pi, 1000, endpoint=True)
-f = 3.0 # Frequency in Hz
-A = 100.0 # Amplitude in Unit
-s = A * np.sin(2*np.pi*f*t) # Signal
-
-
-
-Y = np.fft.fft(s)
-N = int(len(Y)/2+1)
-Y[N-4:N+3]
-
-
-dt = t[1] - t[0]
-fa = 1.0/dt # scan frequency
-print('dt=%.5fs (Sample Time)' % dt)
-print('fa=%.2fHz (Frequency)' % fa)
-
-X = np.linspace(0, fa/2, N, endpoint=True)
-X[:4]
-
-hann = np.hanning(len(s))
-
-Yhann = np.fft.fft(hann*s)
-
-plt.figure(figsize=(7,3))
-plt.subplot(121)
-plt.plot(t,s)
-plt.title('Time Domain Signal')
-plt.ylim(np.min(s)*3, np.max(s)*3)
-plt.xlabel('Time ($s$)')
-plt.ylabel('Amplitude ($Unit$)')
-
-plt.subplot(122)
-plt.plot(X, 2.0*np.abs(Yhann[:N])/N)
-plt.title('Frequency Domain Signal')
-plt.xlabel('Frequency ($Hz$)')
-plt.ylabel('Amplitude ($Unit$)')
-
-plt.annotate("FFT",
-            xy=(0.0, 0.1), xycoords='axes fraction',
-            xytext=(-0.8, 0.2), textcoords='axes fraction',
-            size=30, va="center", ha="center",
-            arrowprops=dict(arrowstyle="simple",
-                            connectionstyle="arc3,rad=0.2"))
-plt.tight_layout()
-plt.show()
-
-
-
-
-
-
-
-
-
-
-# plt.pcolormesh(t, f, Sxx, shading='gouraud')
-
-# plt.ylabel('Frequency [Hz]')
-
-# plt.xlabel('Time [sec]')
-
-# plt.show()
-
-f, Pxx_den = ss.periodogram(RR)
-plt.semilogy(f, Pxx_den)
-#plt.ylim([1e-7, 1e2])
-plt.xlabel('frequency [Hz]')
-plt.ylabel('PSD [V**2/Hz]')
-plt.show()
-
-#working_data, measures = hp.process(pulse.reshape(-1,), 35.14, calc_freq=True)
-#plot =  hp.plotter(working_data, measures, show=False, title = 'Heart Rate Signal and Peak Detection')
-#plt.show()
-
-# y: (N,1)
-# data_reshaped = tf.reshape(pulse, (1, -1, 1)) # (1, N, 1)
-# max_pooled_in_tensor = tf.nn.max_pool(data_reshaped, (20,), 1,'SAME')
-# maxima = tf.equal(data_reshaped, max_pooled_in_tensor) # (1, N, 1)
-# maxima = tf.cast(maxima, tf.float32)
-# #maxima = tf.squeeze(maxima) # (N,1)
-# maxima = tf.reshape(maxima, (-1,))
-# peaks = tf.where(maxima) # now only the Peak Indices (A, 3)
-# #
-# peaks = tf.reshape(peaks, (-1,)) # (A,1)
-
-# plt.plot(maxima)
-# plt.title("Binary Peak signal")
-# plt.xlabel("time (sample)")
-# plt.ylabel("normalized signal [a. u.]")
-# plt.show()
-
-# temp = np.zeros(pulse.shape[0], dtype=np.float32)
-# m = 1/35
-# for i in range(0, len(peaks)):
-#     peak_1 = peaks[i]
-#     if(i-1 >= 0):
-#         peak_0 = peaks[i-1]
-#         min = round((peak_1 - peak_0)/2) + peak_0 + 1
-#         for j in range(min, peak_1+1):
-#             temp[j] = m*(peak_1 - j)
-#     elif(i-1 == -1):
-#         min = 0
-#         for j in range(min, peak_1+1):
-#             temp[j] = m*(peak_1 - j)
-#     if(i+1 < len(peaks)):
-#         peak_2 = peaks[i+1]
-#         max = round((peak_2 - peak_1)/2) + peak_1
-#         for j in range(peak_1, max+1):
-#             temp[j] = m*(j-peak_1)
-#     elif(i+1 == len(peaks)):
-#         max = len(temp)-1
-#         for j in range(peak_1, max+1):
-#             temp[j] = m*(j-peak_1)
-
-# model_output = [29, 65, 91] #[17, 32, 44] #= 
-# binary = np.zeros(pulse.shape[0], dtype=np.float32)
-# for index in model_output:
-#     binary[index] = 1
-
-# mult = binary * temp
-# sum = np.sum(mult)
-# print(sum)
-
-
-# plt.plot(temp)
-# plt.plot(binary)
-# plt.show()
-
-# plt.plot(mult)
-# plt.show()
+print("HF", hf_val)
+print("LF", lf)
+print("LF/hf", lf_hf)
+print("TRuth:  ", np.array(hf['parameter']))

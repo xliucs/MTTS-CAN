@@ -21,11 +21,11 @@ path_of_video_tr = ["D:/Databases/1)Training/COHFACE/5/1/data_dataFile.hdf5"]#,"
                   #  "D:/Databases/1)Training/COHFACE/1/2/data_dataFile.hdf5","D:/Databases/1)Training/COHFACE/1/3/data_dataFile.hdf5"]
 
 model = PPTS_CAN(10, 32, 64, (36,36,3),
-                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128, parameter=['bpm', 'sdnn', 'pnn50'])
+                           dropout_rate1=0.25, dropout_rate2=0.5, nb_dense=128, parameter=['bpm', 'sdnn', 'pnn50', 'lf_hf'])
 training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
                                            batch_size=1, frame_depth=10,
                                            temporal="PPTS_CAN", respiration=False, database_name="COHFACE", 
-                                           time_error_loss=True, truth_parameter=['bpm', 'sdnn', 'pnn50'])
+                                           time_error_loss=True, truth_parameter=['bpm', 'sdnn', 'pnn50', 'lf_hf'])
 
 inp = model.input   # input placeholder
 #model.summary()
@@ -37,28 +37,100 @@ model.load_weights(model_checkpoint)
 # Testing
 test = training_generator.data_generation(path_of_video_tr) 
 output = model(test)
+# import heartpy
+# heartpy.process
+# import scipy.signal as sc
+
+# from scipy.interpolate import UnivariateSpline
+# ##################
+# path = "D:/Databases/1)Training/COHFACE/6/1/data_dataFile.hdf5"
+# h5pyfiledata = h5py.File(path, 'r')
+# data = np.array(h5pyfiledata["pulse"])
+
+# f,m = heartpy.process(data, 20, freq_method='fft',calc_freq=True)
+
+# rr_list = f['RR_list_cor']
+# # Aggregate RR-list and interpolate to a uniform sampling rate at 4x resolution
+# rr_x = np.cumsum(rr_list)
+
+# resamp_factor = 4
+# datalen = int((len(rr_x) - 1)*resamp_factor)
+# rr_x_new = np.linspace(int(rr_x[0]), int(rr_x[-1]), datalen)
+
+# interpolation_func = UnivariateSpline(rr_x, rr_list, k=3)
+# rr_interp = interpolation_func(rr_x_new)
+
+# # RR-list in units of ms, with the sampling rate at 1 sample per beat
+# dt = np.mean(rr_list) / 1000  # in sec
+# fs = 1 / dt  # about 1.1 Hz; 50 BPM would be 0.83 Hz, just enough to get the
+# # max of the HF band at 0.4 Hz according to Nyquist
+# fs_new = fs * resamp_factor
+
+# # compute PSD (one-sided, units of ms^2/Hz)
+# frq = np.fft.fftfreq(datalen, d=(1 / fs_new))
+# frq = frq[range(int(datalen / 2))]
+# Y = np.fft.fft(rr_interp) / datalen
+# Y = Y[range(int(datalen / 2))]
+
+# plt.plot(frq,Y, label="X")
+# plt.show()
+# psd = np.power(Y, 2)
+
+# df = frq[1] - frq[0]
+# lf = np.trapz(abs(psd[(frq >= 0.04) & (frq < 0.15)]), dx=df)
+# hf = np.trapz(abs(psd[(frq >= 0.15) & (frq < 0.4)]), dx=df)
+# print("mit Interpolation")
+# print(lf, m['lf'])
+# print(hf, m['hf'])
+
+# f, pxx = sc.periodogram(data, 20)
+
+# f2,m2 = heartpy.process(data, 20,calc_freq=True)
+# print(m2['lf'], m['lf'])
+# print(m2['hf'], m['hf'])
+# print(m2['lf/hf'], m['lf/hf'])
+
+# #plt.plot(data)
+# #plt.show()
+# data = np.array(h5pyfiledata["nn"])
+# size = tf.size(data)
+# print("SIZE",size )
+# b = tf.range(tf.cast(0, tf.float32), tf.cast(size, tf.float32), tf.cast(1/20, tf.float32))
+
+# data = tf.reshape(tf.convert_to_tensor(data), (-1,))
+# #data = tf.cast(data, dtype=tf.complex64)
+
+# frq = tf.cast(tf.abs(tf.signal.rfft(data)), tf.float32)/tf.cast(size,tf.float32)#, tf.cast(size, tf.float32))#/size#, 60, 1200))
+
+# dt = np.mean(data) / 1000  # in sec
+# fs = 1 / dt
+# t = np.fft.fftfreq(63, d=(1 / fs))
+# t = t[0:tf.size(frq)]
+# print(t)
+
+# t = np.arange(0,(tf.size(frq)))
+# t = tf.cast(tf.range(0, tf.size(frq)), tf.float32)
+# print("NEU",t)
+# t = tf.cast(t, tf.float32)/(tf.cast(dt, tf.float32)*tf.cast(tf.size(frq)*2, tf.float32))
+# print(t)
+# #frq = tf.slice(frq, 1,tf.size(data)/2 )
+
+# plt.plot(t, frq, label="FFT")
+# plt.show()
+
+# mask_lf = tf.cast(tf.logical_and(tf.greater_equal(t, 0.04), tf.less(t, 0.15)), tf.float32)
+# lf = tf.maximum(tf.reduce_sum(frq*mask_lf), 0.000001)
+# mask_hf = tf.cast(tf.logical_and(tf.greater_equal(t, 0,15), tf.less(t, 0.4)), tf.float32)
+# hf = tf.maximum(tf.reduce_sum(frq*mask_lf), 0.000001)
+
+# lf_hf = lf/hf
+
+# print(lf)
 
 
-##################
-path = "D:/Databases/1)Training/COHFACE/5/1/data_dataFile.hdf5"
-hf = h5py.File(path, 'r')
-data = np.array(hf["pulse"])
+# test = tf.squeeze(frq)
 
-
-test1 = tfp.sts.Autoregressive(data)
-
-data = tf.reshape(tf.convert_to_tensor(data), (-1,1))
-data = tf.transpose(data)
-
-frq = tf.abs(tf.signal.stft(data, tf.size(data), 3))
-frq = tf.slice(frq, 1,tf.size(data)/2 )
-
-test = tf.squeeze(frq)
-
-b = tf.abs(test**2)/(2*20)
-
-plt.plot(b)
-plt.show()
+# b = tf.abs(test**2)/(2*20)
 
 
 # # fs = 20

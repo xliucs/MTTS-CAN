@@ -23,7 +23,7 @@ def write_header(worksheet):
                 'rmssd-pred', 'rmssd-truth', 'pNN50-pred', 'pNN50-truth',
                 'LF-pred', 'LF-truth', 'HF-pred', 'HF-truth',
                 'TP-pred', 'TP-truth', 'LF/HF-pred', 'LF/HF-truth',
-                'sd1-pred', 'sd1_truth', 'sd2_pred', 'sd2_truth']
+                'sd1-pred', 'sd1_truth', 'sd2_pred', 'sd2_truth', 'MAE']
     for index in range(len(header)):
         worksheet.write(0,index, header[index])
 
@@ -83,7 +83,7 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
     old_database = "COH"
     for sample_data_path in video_path:
         print("path:  ",sample_data_path)
-        if sample_data_path[-3:] == ".avi":
+        if sample_data_path[-4:] == ".avi":
             dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
         else: 
             dXsub, fs = preprocess_raw_frames(sample_data_path, dim=36)
@@ -172,12 +172,7 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
             pulse_truth = pulse_truth[:len(pulse_pred)]
         ########### Peaks ###########
         working_data_pred, measures_pred = hp.process(pulse_pred, fs, calc_freq=True)
-        plot =  hp.plotter(working_data_pred, measures_pred, show=False, title = 'Heart Rate Signal and Peak Detection')
-        plot.savefig("Test")
-
         working_data_truth, measures_truth = hp.process(pulse_truth, fs, calc_freq=True)
-        plot =  hp.plotter(working_data_truth, measures_truth, show=False, title = 'Heart Rate Signal and Peak Detection')
-        plot.savefig("Testpred")
         peaks_pred = working_data_pred['peaklist']
         peaks_truth = working_data_truth['peaklist']
 
@@ -190,7 +185,7 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
             nameStr = str(sample_data_path)[nmr + 12:].replace("\\", "-").replace("vid_", "").replace(".avi", "")
         elif(str(sample_data_path).find("UBFC") > 0):
             nmr = str(sample_data_path).find("UBFC")
-            nameStr = str(sample_data_path)[nmr + 17:].replace("\\", "-").replace("vid.avi", "")
+            nameStr = str(sample_data_path)[nmr + 5:].replace("\\", "-").replace("vid.avi", "")
         elif(str(sample_data_path).find("BD4P") > 0):
             nmr = str(sample_data_path).find("BD4P")
             nameStr = str(sample_data_path)[nmr + 5:].replace("\\", "-")
@@ -242,7 +237,6 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         ######### Metrics ##############
         # MSE:
         MAE = metrics.mean_absolute_error(pulse_truth, pulse_pred)
-        MSE = metrics.mean_squared_error(pulse_truth, pulse_pred)
         # RMSE:
         RMSE = metrics.mean_squared_error(pulse_truth, pulse_pred, squared=False)
         # Pearson correlation:
@@ -264,10 +258,10 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         worksheet.write(counter_video,10, measures_truth['rmssd'])
         worksheet.write(counter_video,11, measures_pred['pnn50'])
         worksheet.write(counter_video,12, measures_truth['pnn50'])
-        worksheet.write(counter_video,13, measures_pred['lf'])
-        worksheet.write(counter_video,14, measures_truth['lf'])
-        worksheet.write(counter_video,15, measures_pred['hf'])
-        worksheet.write(counter_video,16, measures_truth['hf'])
+        worksheet.write(counter_video,13, measures_pred['lf_perc'])
+        worksheet.write(counter_video,14, measures_truth['lf_perc'])
+        worksheet.write(counter_video,15, measures_pred['hf_perc'])
+        worksheet.write(counter_video,16, measures_truth['hf_perc'])
         worksheet.write(counter_video,17, measures_pred['p_total'])
         worksheet.write(counter_video,18, measures_truth['p_total'])
         worksheet.write(counter_video,19, measures_pred['lf/hf'])
@@ -276,30 +270,30 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         worksheet.write(counter_video,22, measures_truth['sd1'])
         worksheet.write(counter_video,23, measures_pred['sd2'])
         worksheet.write(counter_video,24, measures_truth['sd2'])
+        worksheet.write(counter_video,25, MAE)
 
         counter_video += 1
         old_database = database_name
    
 if __name__ == "__main__":
-    path_results = "D:/Databases/4)Results/Version4/TS_Databases" #finalVersions"
-    data_dir = "C:/Users/sarah/Desktop"#\F001"
-    #data_dir = "D:/Databases/3)Testing/"
-    modelDir_names = glob(path_results + "COHFACE/*")
-    modelDir_names += glob(path_results + "UBFC/*")
+    path_results = "D:/Databases/4)Results/Version5" #finalVersions"
+    #data_dir = "C:/Users/sarah/Desktop"#\F001"
+    data_dir = "D:/Databases/3)Testing/"
+    modelDir_names = glob(path_results + "/PP*")
     testModel_names = []
     for dir in modelDir_names:
         split = dir.split("\\")
-        testModel_names.append(split[len(split)-1])
+        testModel_names.append(split[-1])
     
-    video_path = glob(os.path.join(data_dir, "**/*", '*.avi'), recursive=True)
+    #video_path = glob(os.path.join(data_dir, "**/*", '*.avi'), recursive=True)
+    video_path = glob(os.path.join(data_dir, "COHFACE/**/*", '*.avi'), recursive=True)
+    video_path += glob(os.path.join(data_dir, "UBFC/**/*", '*.avi'), recursive=True)
     ### BD4P ####
-    new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
-    video_path = video_path + new_dirs
+    #new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
+    #video_path = video_path + new_dirs
     
-    save_dir = "D:/Databases/5)Evaluation/Test"#finalEvaluation"
+    save_dir = "D:/Databases/5)Evaluation/P_Evaluation_Mix2"#finalEvaluation"
     
-
-    testModel_names = ["TS_CAN_MIX2"]
     print("Models: ", testModel_names)
     for test_name in testModel_names:
         print("Current Modelname: ", test_name)

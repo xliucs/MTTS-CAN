@@ -49,7 +49,7 @@ class DataGenerator(data_utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indexes)
 
-    def data_generation(self, list_video_temp):
+    def __data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
 
         if self.temporal == 'CAN_3D':
@@ -227,7 +227,23 @@ class DataGenerator(data_utils.Sequence):
                 truthParams = ast.literal_eval(str(truthParams))
                 params = np.zeros(len(self.truth_parameter))
                 for parameter_index in range(0,len(self.truth_parameter)):
-                    params[parameter_index] = truthParams[str(self.truth_parameter[parameter_index])]
+                    if str(self.truth_parameter[parameter_index]) == "lf_hf":
+                        nn_list = np.array(f1['nn'])
+                        nn_list = tf.reshape(tf.convert_to_tensor(nn_list), (-1,))
+                        frq = tf.cast(tf.abs(tf.signal.rfft(nn_list)), tf.float32)/tf.cast(tf.size(nn_list),tf.float32)
+                        dt = tf.math.reduce_mean(nn_list) / 1000  # in sec
+                        t = tf.cast(tf.range(0, tf.size(frq)), tf.float32)
+                        t = tf.cast(t, tf.float32)/(tf.cast(dt, tf.float32)*tf.cast(tf.size(frq)*2, tf.float32))
+
+                        mask_lf = tf.cast(tf.logical_and(tf.greater_equal(t, 0.04), tf.less(t, 0.15)), tf.float32)
+                        lf = tf.maximum(tf.reduce_sum(frq*mask_lf), 0.000001)
+                        mask_hf = tf.cast(tf.logical_and(tf.greater_equal(t, 0,15), tf.less(t, 0.4)), tf.float32)
+                        hf = tf.maximum(tf.reduce_sum(frq*mask_hf), 0.000001)
+
+                        lf_hf = lf/hf
+                        params[parameter_index] = lf_hf
+                    else:
+                        params[parameter_index] = truthParams[str(self.truth_parameter[parameter_index])]
                 label_params[param_counter: param_counter+len(self.truth_parameter)] = params
                 
                 if dXsub.shape[0] > self.maxLen_Video: # UBFC-PHYS
@@ -456,7 +472,7 @@ def time_error_loss_dataGenerator(current_nframe, dzsub, fps):
         peak_1 = dzsub[i]
         if(i-1 >= 0):
             peak_0 = dzsub[i-1]
-            min = round((peak_1 - peak_0)/2) + peak_0 + 1
+            min = int(round((peak_1 - peak_0)/2) + peak_0 + 1)
             for j in range(min, peak_1+1):
                 temp[j] = m*(peak_1 - j)
         elif(i-1 == -1):
@@ -465,7 +481,7 @@ def time_error_loss_dataGenerator(current_nframe, dzsub, fps):
                 temp[j] = m*(peak_1 - j)
         if(i+1 < len(dzsub)):
             peak_2 = dzsub[i+1]
-            max = round((peak_2 - peak_1)/2) + peak_1
+            max = int(round((peak_2 - peak_1)/2) + peak_1)
             for j in range(peak_1, max+1):
                 temp[j] = m*(j-peak_1)
         elif(i+1 == len(dzsub)):
