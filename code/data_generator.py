@@ -49,7 +49,7 @@ class DataGenerator(data_utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indexes)
 
-    def data_generation(self, list_video_temp):
+    def __data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
 
         if self.temporal == 'CAN_3D':
