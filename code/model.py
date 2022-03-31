@@ -144,8 +144,9 @@ class ownLayer_parameter(tf.keras.layers.Layer):
         f_true = lambda: data
         f_false = lambda: tf.convert_to_tensor([1], dtype=tf.float32)
 
-        def custom_func(input):
-            return tf.cast(tf.abs(tf.signal.rfft(data)), tf.float32)/tf.cast(tf.size(data),tf.float32)
+        def custom_func(data):
+            frq = tf.cast(tf.abs(tf.signal.rfft(data)), tf.float32)/tf.cast(tf.size(data),tf.float32)
+            return tf.multiply(tf.pow(frq,2),tf.math.sqrt(tf.cast(2, tf.float32)))
         data = tf.case([(tf.greater(tf.size(rr), 2),f_true), (tf.less(tf.size(rr), 2),f_false)])
 
         frq = tf.keras.layers.Lambda(custom_func)(data)

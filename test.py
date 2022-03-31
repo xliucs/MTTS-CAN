@@ -132,42 +132,17 @@ import scipy.signal as ss
 import scipy.fft as sf
 
 
-
-
-#dxSub = preprocess_raw_video(vid, 36)
-path = "D:/Databases/1)Training/COHFACE/2/0/data_dataFile.hdf5"
-hf = h5py.File(path, 'r')
-
-hr_data = np.array(hf['nn'])
-
-
-hr_data = tf.convert_to_tensor(hr_data)
-
-def tf_diff_axis_0(a):
-    return a[1:]-a[:-1]
-ibi_diff = tf_diff_axis_0(hr_data)
-
-mask = (tf.greater(tf.abs(ibi_diff),50))
-mask.set_shape([None])
-
-mask = tf.cast(mask, dtype=tf.int32)
-nn50 = tf.math.reduce_sum(mask)
-
-rr_arr = tf.boolean_mask(ibi_diff, mask)
-
-print(nn50/tf.size(mask))
-print(np.array(hf['parameter']))
-
-
-
-
 from scipy.interpolate import UnivariateSpline
+##################
+path = "D:/Databases/1)Training/COHFACE/6/1/data_dataFile.hdf5"
+h5pyfiledata = h5py.File(path, 'r')
+data = np.array(h5pyfiledata["pulse"])
 
-working_data, measures = hp.process(hr_data, 20, calc_freq=True)
 
-rr_list = np.array(hf['nn'])
-
+rr_list = np.array(h5pyfiledata['nn'])
+# Aggregate RR-list and interpolate to a uniform sampling rate at 4x resolution
 rr_x = np.cumsum(rr_list)
+
 resamp_factor = 4
 datalen = int((len(rr_x) - 1)*resamp_factor)
 rr_x_new = np.linspace(int(rr_x[0]), int(rr_x[-1]), datalen)
@@ -175,39 +150,76 @@ rr_x_new = np.linspace(int(rr_x[0]), int(rr_x[-1]), datalen)
 interpolation_func = UnivariateSpline(rr_x, rr_list, k=3)
 rr_interp = interpolation_func(rr_x_new)
 
+
 # RR-list in units of ms, with the sampling rate at 1 sample per beat
 dt = np.mean(rr_list) / 1000  # in sec
 fs = 1 / dt  # about 1.1 Hz; 50 BPM would be 0.83 Hz, just enough to get the
 # max of the HF band at 0.4 Hz according to Nyquist
 fs_new = fs * resamp_factor
 
-# nperseg should be based on trade-off btw temporal res and freq res
-# default is 4 min to get about 9 points in the VLF band
-welch_wsize=240
-nperseg = welch_wsize * fs_new
-if nperseg >= len(rr_x_new):  # if nperseg is larger than the available data segment
-    nperseg = len(rr_x_new)  # set it to length of data segment to prevent scipy warnings
-    # as user is already informed through the signal length warning
-frq, psd = ss.welch(rr_list, fs=fs)#, nperseg=nperseg)
+# compute PSD (one-sided, units of ms^2/Hz)
+frq = np.fft.fftfreq(datalen, d=(1 / fs_new))
+frq = frq[range(int(datalen / 2))]
+Y = np.math.sqrt(2)* np.fft.rfft(rr_interp) / datalen
+Y = Y[:-1]
+#Y = Y[range(int(datalen / 2))]
+Y = np.power(Y,2)
+
+delta = fs/tf.size(rr_list)
+
+frq3 = tf.cast(tf.range(0, tf.size(frq)), tf.float32)
+frq3 = tf.cast(frq3, tf.float32)/(tf.cast(dt, tf.float32)*tf.cast(tf.size(rr_list), tf.float32))
+frq2 = np.fft.rfftfreq(len(rr_x), d=(1 / fs))
+#frq2 = frq2[range(int(len(rr_x) / 2))]
+Y2= np.math.sqrt(2)*  np.fft.rfft(rr_list) / len(rr_x) 
 
 
-plt.plot(frq,psd)
+#
+#Y2 = Y[range(int(len(rr_x) / 2))]
+Y2 = np.power(Y2,2)
+
+plt.figure()
+plt.subplot(211)
+plt.title("Raw RR intervall data")
+plt.plot(rr_list, label="raw RR signal", color ='#005AA9')
+plt.ylabel("ms")
+plt.subplot(212)
+plt.title("RR time-series with interpolation")
+plt.plot(rr_interp, label="with interpolation", color ='#005AA9')
+plt.ylabel("ms")
+
+plt.xlabel("samples")
 plt.show()
 
-df = frq[1] - frq[0]
 
-lf = 0
-for fs in range(0, len(frq)):
-    if(frq[fs]>= 0.04 and frq[fs]<0.15):
-        lf += psd[fs]
-print(lf)
-print(lf*df)
-lf= np.trapz(abs(psd[(frq >= 0.04) & (frq < 0.15)]), dx=df)
-hf_val = np.trapz(abs(psd[(frq >= 0.15) & (frq < 0.4)]), dx=df)
-lf_hf = lf /hf_val
+y = np.arange(-20,400,0.1)
+plt.plot(frq,np.abs(Y), label="interpolated Power Spectrum", color ='#E6001A')
+plt.ylabel("$ms^{2}$")
+plt.xlabel("Hz")
+plt.title("FFT Power Spectrum")
+plt.fill_betweenx(y, 0.04, 0.15,  color='#7FAB16', alpha=.3)
+plt.fill_betweenx(y, 0.15, 0.4,  color='#D28700', alpha=.3)
+plt.plot(frq2,np.abs(Y2), label="raw Power Spectrum", color ='#005AA9')
 
+plt.legend()
+plt.show()
+psd = np.power(Y, 2)
 
-print("HF", hf_val)
-print("LF", lf)
-print("LF/hf", lf_hf)
-print("TRuth:  ", np.array(hf['parameter']))
+mask_lf = tf.cast(tf.logical_and(tf.greater_equal(frq, 0.04), tf.less(frq, 0.15)), tf.float32)
+lf = tf.reduce_sum(np.abs(Y)*mask_lf)
+mask_hf = tf.cast(tf.logical_and(tf.greater_equal(frq, 0.15), tf.less(frq, 0.4)), tf.float32)
+hf = tf.reduce_sum(np.abs(Y)*mask_hf)
+
+mask_lf2 = tf.cast(tf.logical_and(tf.greater_equal(frq2, 0.04), tf.less(frq2, 0.15)), tf.float32)
+lf2 = tf.reduce_sum(np.abs(Y2)*mask_lf2)
+mask_hf2 = tf.cast(tf.logical_and(tf.greater_equal(frq2, 0.15), tf.less(frq2, 0.4)), tf.float32)
+hf2 = tf.reduce_sum(np.abs(Y2)*mask_hf2)
+
+print("inter: ", lf, "not: ", lf2)
+print("inter: ", hf, "not:", hf2)
+
+import heartpy as hp
+
+f, m = hp.process(data, 20, freq_method='fft', calc_freq=True)
+
+print(m)

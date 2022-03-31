@@ -279,7 +279,7 @@ if __name__ == "__main__":
     path_results = "D:/Databases/4)Results/Version5" #finalVersions"
     #data_dir = "C:/Users/sarah/Desktop"#\F001"
     data_dir = "D:/Databases/3)Testing/"
-    modelDir_names = glob(path_results + "/PP*")
+    modelDir_names = glob(path_results + "/P*")
     testModel_names = []
     for dir in modelDir_names:
         split = dir.split("\\")
@@ -291,7 +291,7 @@ if __name__ == "__main__":
     ### BD4P ####
     #new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
     #video_path = video_path + new_dirs
-    
+    testModel_names = ['TS_CAN']
     save_dir = "D:/Databases/5)Evaluation/P_Evaluation_Mix2"#finalEvaluation"
     
     print("Models: ", testModel_names)

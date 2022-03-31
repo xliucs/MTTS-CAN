@@ -49,7 +49,7 @@ class DataGenerator(data_utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, list_video_temp):
+    def data_generation(self, list_video_temp):
         'Generates data containing batch_size samples'
 
         if self.temporal == 'CAN_3D':
@@ -231,6 +231,8 @@ class DataGenerator(data_utils.Sequence):
                         nn_list = np.array(f1['nn'])
                         nn_list = tf.reshape(tf.convert_to_tensor(nn_list), (-1,))
                         frq = tf.cast(tf.abs(tf.signal.rfft(nn_list)), tf.float32)/tf.cast(tf.size(nn_list),tf.float32)
+                        frq = tf.multiply(tf.pow(frq,2),tf.math.sqrt(tf.cast(2, tf.float32)))
+                        
                         dt = tf.math.reduce_mean(nn_list) / 1000  # in sec
                         t = tf.cast(tf.range(0, tf.size(frq)), tf.float32)
                         t = tf.cast(t, tf.float32)/(tf.cast(dt, tf.float32)*tf.cast(tf.size(frq)*2, tf.float32))

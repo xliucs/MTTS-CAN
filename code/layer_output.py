@@ -29,7 +29,7 @@ training_generator = DataGenerator(path_of_video_tr, 2100, (36, 36),
 
 inp = model.input   # input placeholder
 #model.summary()
-model_checkpoint = os.path.join("D:/Databases/4)Results/Version5/PPTS_CAN_bpm_sdnn/cv_0_epoch24_model.hdf5")
+model_checkpoint = os.path.join("D:/Databases/4)Results/altesPPTS/PPTS_CAN_bpm_sdnn/cv_0_epoch24_model.hdf5")
 model.load_weights(model_checkpoint)
 #outputs = [layer.output for layer in model.layers]          # all layer outputs
 #functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
