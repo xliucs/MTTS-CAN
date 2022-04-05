@@ -149,7 +149,8 @@ def predict_vitals(workBook, test_name, model_name, video_path, path_results):
     elif(str(sample_data_path).find("UBFC-PHYS") > 0):
         nameStr = str(nameStrAll[5]).replace("vid", "").replace(".avi", "")
     elif(str(sample_data_path).find("UBFC") > 0):
-        nameStr = str(nameStrAll[7])
+        nmr = str(sample_data_path).find("UBFC")
+        nameStr = str(sample_data_path)[nmr + 5:].replace("\\", "-").replace("vid.avi", "").replace("/", "")
     else:
         raise ValueError
 
@@ -282,10 +283,18 @@ if __name__ == "__main__":
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject3/vid.avi",
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject9/vid.avi", 
     "C:/Users/sarah/OneDrive/Desktop/UBFC/DATASET_2/subject40/vid.avi"]
-    
-    test_names = ['PPTS_CAN'] 
+    video_path = [\
+    "D:/Databases/3)Testing/COHFACE/21/1/data.avi",
+    "D:/Databases/3)Testing/COHFACE/25/2/data.avi", 
+    "D:/Databases/3)Testing/COHFACE/28/0/data.avi",
 
-    save_dir = "D:/Databases/5)Evaluation/Comparison_newModels"
+    "D:/Databases/3)Testing/UBFC/subject42/vid.avi",
+    "D:/Databases/3)Testing/UBFC/subject44/vid.avi",
+    "D:/Databases/3)Testing/UBFC/subject47/vid.avi"]
+    
+    test_names = ['PPTS_CAN_all','PPTS_CAN_sdnn_pnn50_lfhf2', 'PTS_CAN_TE2']
+
+    save_dir = "D:/Databases/5)Evaluation/Test"
     print("Models: ", test_names)
 
    
@@ -302,7 +311,6 @@ if __name__ == "__main__":
             continue
         elif str(test_name).find("PPTS") >= 0:
             model_name = "PPTS_CAN"
-            continue
         elif str(test_name).find("PTS") >= 0:
             model_name = "PTS_CAN"
         elif str(test_name).find("TS_CAN") >= 0:

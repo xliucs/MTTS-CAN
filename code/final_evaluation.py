@@ -276,24 +276,27 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         old_database = database_name
    
 if __name__ == "__main__":
-    path_results = "D:/Databases/4)Results/Version5" #finalVersions"
+    #path_results = "D:/Databases/4)Results/Version5" #finalVersions"
+    path_results = "/home/quehl/Results/actualResults"
     #data_dir = "C:/Users/sarah/Desktop"#\F001"
-    data_dir = "D:/Databases/3)Testing/"
-    modelDir_names = glob(path_results + "/P*")
+    #data_dir = "D:/Databases/3)Testing/"
+    data_dir = '/mnt/share/StudiShare/sarah/Databases/Testing'
+    modelDir_names = glob(path_results)
     testModel_names = []
     for dir in modelDir_names:
         split = dir.split("\\")
         testModel_names.append(split[-1])
     
-    #video_path = glob(os.path.join(data_dir, "**/*", '*.avi'), recursive=True)
-    video_path = glob(os.path.join(data_dir, "COHFACE/**/*", '*.avi'), recursive=True)
-    video_path += glob(os.path.join(data_dir, "UBFC/**/*", '*.avi'), recursive=True)
+    video_path = glob(os.path.join(data_dir, "**/*", '*.avi'), recursive=True)
+    #video_path = glob(os.path.join(data_dir, "COHFACE/**/*", '*.avi'), recursive=True)
+    #video_path += glob(os.path.join(data_dir, "UBFC/**/*", '*.avi'), recursive=True)
     ### BD4P ####
-    #new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
-    #video_path = video_path + new_dirs
-    testModel_names = ['TS_CAN']
-    save_dir = "D:/Databases/5)Evaluation/P_Evaluation_Mix2"#finalEvaluation"
+    new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
+    video_path = video_path + new_dirs
     
+    #testModel_names=['PTS_CAN_Gauss2']#, 'PPTS_CAN_negPea_TE_sdnn_pnn50_lfhf']
+    #save_dir = "D:/Databases/5)Evaluation/P_Evaluation_Mix2"#finalEvaluation"
+    save_dir = '/home/quehl/finalEvaluation/'
     print("Models: ", testModel_names)
     for test_name in testModel_names:
         print("Current Modelname: ", test_name)
@@ -327,11 +330,3 @@ if __name__ == "__main__":
         predict_vitals(worksheet, test_name, model_name, video_path, path_results)
         print("Ready with this model")
         workbook.close()
-
-
-
-
-#python code/predict_vitals_new.py --video_path "D:\Databases\1)Training\COHFACE\1\1\data.avi" --trained_model ./cv_0_epoch24_model.hdf5
-#./rPPG-checkpoints/testCohFace1/cv_0_epoch24_model.hdf5
-#./rPPG-checkpoints/test1/cv_0_epoch04_model.hdf5'
-#python code/predict_vitals_new.py --video_path "D:\Databases\1)Training\UBFC-PHYS\s1\vid_s1_T1.avi" --trained_model ./cv_0_epoch24_model.hdf5
