@@ -78,15 +78,16 @@ def preprocess_raw_frames(framePath, dim=36):
     #########################################################################
     # set up
     i = 0
-    
+    frames = sorted(frames)
     totalFrames = int(len(frames)) # get total frame size
     
     Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)
     
     #########################################################################
     # Crop each frame size into dim x dim
-    while i < totalFrames:
+    while i <= totalFrames:
         img = cv2.imread(frames[i])
+        print(img)
         #t.append(vidObj.get(cv2.CAP_PROP_POS_MSEC))# current timestamp in milisecond
         vidLxL = cv2.resize(img_as_float(img), (dim, dim), interpolation = cv2.INTER_AREA)
         #vidLxL = cv2.rotate(vidLxL, cv2.ROTATE_90_CLOCKWISE) # rotate 90 degree

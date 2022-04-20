@@ -8,7 +8,41 @@ Source code of the master thesis titles: "Analysis and optimization of photoplet
 
 ## Cite as
 
-Sarah Quehl. (2022, April 11). Analysis and optimization of photoplethysmography imaging methods for non-contact measurement of heart variability parameters
+Sarah Quehl. (2022, April 11). Analysis and Optimization of Photoplethysmography Imaging Methods for Non-Contact Measurement of Heart Variability Parameters
+
+## Abstract 
+Heart rate variability is an important physiological parameter for health and refers to the natural
+variation of the time between two heartbeats. Heart rate variability describes the adaptability of an
+organism to external and internal factors and can be measured with common measuring devices, like
+electrocardiogram or photoplethysmogram. Today, this is even possible with the smartphone via apps.
+Photoplethysmography Imaging as a non-contact method is a further development of state-of-the-art
+photoplethysmography for recording cardiac activity by detecting minimal pulse-induced fluctuations
+on the skin with a RGB camera. Most Photoplethysmography Imaging methods focus on heart rate
+measurement and do not consider heart rate variability. In recent years, many new approaches based
+on signal filtering or neural networks have been presented. However, the accuracy required for medical
+purposes, especially with regard to heart rate variability, has not yet been achieved and represents a
+major challenge.
+This thesis compares current Photoplethysmography Imaging methods based on neural networks. For
+this purpose, four basis methods are implemented and tested for functionality. Based on these findings,
+two new networks were developed, the PTS-CAN and the PPTS-CAN. These are based on multi-objective
+optimization and add one and two additional outputs to the neural network, respectively. The additional
+output of the PTS-CAN outputs a binary signal that has a value of one at peaks. For this output two new
+loss functions were developed, which have the goal to reduce the temporal error of the peaks. For this
+purpose, two new loss functions named ownGauss and the TE were developed, the last one allows an
+interpretation of the error in seconds. Both manipulate the ground truth to generate a loss, to reward
+the peaks that are close to the real peak and to punish peaks that are further away. A further output
+was added to the first model, which outputs various variable parameters and is evaluated by the mean
+absolute percentage error loss function. All used models are trained on the same database and are
+compared. In addition, there is a comparison with the first developed methods on the subject of vital
+parameters extraction from video. A final comparison shows an improvement in HR and HRV parameter
+calculation with the new methods. The heart rate calculation can be improved by about 20%. In the field
+of HRV parameters, an improvement of 5,7% can be achieved for the parameter SDNN, for example.
+In a cross-validation, improvements are achieved over the baseline methods and there is also a slight
+improvement over the basis models. For the parameters in the frequency domain, the improvements are
+a bit less clear than in the time domain, since the frequency analysis is more challenging here.
+A project was generated, which can be used as a basis for further experiments with further approaches
+and loss functions. The integration of further network architectures as well as loss functions is easily
+possible.
 
 
 ## Basis Paper
@@ -20,7 +54,6 @@ The code is based on the following paper:
 `python code/train.py --exp_name test --exp_name [e.g., test] --data_dir [DATASET_PATH] --temporal [e.g., MMTS_CAN]`
 
 examples:
-python code/train.py --exp_name testCohFace2 --data_dir E:/Databases --temporal CAN_3D --nb_task 4
 
 python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN --database_name MIX
 

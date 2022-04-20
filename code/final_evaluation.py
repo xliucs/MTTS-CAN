@@ -135,12 +135,12 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         elif(str(sample_data_path).find("UBFC") > 0):
             database_name = "UBFC"
             truth_path = sample_data_path.replace("vid.avi", "dataFile.hdf5")
-        elif(str(sample_data_path).find("BD4P") > 0):
-            database_name = "BD4P"
+        elif(str(sample_data_path).find("BP4D") > 0):
+            database_name = "BP4D"
             truth_path = sample_data_path + "/BP_mmHg.txt"
         else:
             return print("Error in finding the ground truth signal...")
-        if database_name != "BD4P":
+        if database_name != "BP4D":
             gound_truth_file = h5py.File(truth_path, "r")
             pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
             pulse_truth = pulse_truth[0:dXsub_len]
@@ -186,8 +186,8 @@ def predict_vitals(worksheet, test_name, model_name, video_path, path_results):
         elif(str(sample_data_path).find("UBFC") > 0):
             nmr = str(sample_data_path).find("UBFC")
             nameStr = str(sample_data_path)[nmr + 5:].replace("\\", "-").replace("vid.avi", "")
-        elif(str(sample_data_path).find("BD4P") > 0):
-            nmr = str(sample_data_path).find("BD4P")
+        elif(str(sample_data_path).find("BP4D") > 0):
+            nmr = str(sample_data_path).find("BP4D")
             nameStr = str(sample_data_path)[nmr + 5:].replace("\\", "-")
         else:
             raise ValueError
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     #data_dir = "C:/Users/sarah/Desktop"#\F001"
     #data_dir = "D:/Databases/3)Testing/"
     data_dir = '/mnt/share/StudiShare/sarah/Databases/Testing'
-    modelDir_names = glob(path_results)
+    modelDir_names = glob(path_results +"/*")
     testModel_names = []
     for dir in modelDir_names:
         split = dir.split("\\")
@@ -290,8 +290,8 @@ if __name__ == "__main__":
     video_path = glob(os.path.join(data_dir, "**/*", '*.avi'), recursive=True)
     #video_path = glob(os.path.join(data_dir, "COHFACE/**/*", '*.avi'), recursive=True)
     #video_path += glob(os.path.join(data_dir, "UBFC/**/*", '*.avi'), recursive=True)
-    ### BD4P ####
-    new_dirs = glob(os.path.join(data_dir, "BD4P/**/*"))
+    ### BP4D ####
+    new_dirs = glob(os.path.join(data_dir, "BP4D/**/*"))
     video_path = video_path + new_dirs
     
     #testModel_names=['PTS_CAN_Gauss2']#, 'PPTS_CAN_negPea_TE_sdnn_pnn50_lfhf']
