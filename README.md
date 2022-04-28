@@ -1,4 +1,4 @@
-## Analysis and optimization of photoplethysmography imaging methods for non-contact measurement of heart variability parameters
+# Analysis and optimization of photoplethysmography imaging methods for non-contact measurement of heart variability parameters
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
@@ -44,13 +44,7 @@ A project was generated, which can be used as a basis for further experiments wi
 and loss functions. The integration of further network architectures as well as loss functions is easily
 possible.
 
-
-## Basis Paper
-The code is based on the following paper:
-#### [Xin Liu](https://homes.cs.washington.edu/~xliu0/), [Josh Fromm](https://www.linkedin.com/in/josh-fromm-2a4a2258/), [Shwetak Patel](https://ubicomplab.cs.washington.edu/members/), [Daniel McDuff](https://www.microsoft.com/en-us/research/people/damcduff/), “Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement”, NeurIPS 2020, Oral Presentation (105 out of 9454 submissions)´
-
-
-### Preprocessing
+## Preprocessing
 It is recommended to save the important information of each video into a hdf5-file using the `prepare_databases.py` script. Here pixel data, ground truth and various parameters are integrated.
 
 ## Training
@@ -67,19 +61,27 @@ python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Dat
 `python code/predict_vitals_oneVideo.py --video_path [VIDEO_PATH] --save_dir [SAVE_PATH] --trained_model [CHECKPOINT_PATH]
         --model_name [e.g., TS_CAN, PTS_CAN, PPTS_CAN] --parameter [e.g., "bpm,sdnn, pnn50, lfhf"]`
 
-#### Path dependencies in the following scripts
+## Path dependencies in the following scripts
 final_evaluation.py
+
 model_evaluation.py
+
 pre_process.py
+
 predict_vitals_comparison.py
+
 predict_vitals_new.py
+
 predict_vitals_oneVideo.py
+
 predict.vitals.py
+
 layer_output.py
+
 
 In the current scripts, the data has been divided into the folders 1)Training and 2)Validation.
 
-### evaluation_iPhys.py
+## evaluation_iPhys.py
 Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHROM) with the same procedure and products as in the finalEvaluation.py script.
 
 Prerequisites:
@@ -105,6 +107,11 @@ If`pip install opencv-python` does not work, I found these commands always work 
 conda install -c menpo opencv -y
 pip install opencv-python
 ```
+
+
+## Basis Paper
+The code is based on the following paper:
+#### [Xin Liu](https://homes.cs.washington.edu/~xliu0/), [Josh Fromm](https://www.linkedin.com/in/josh-fromm-2a4a2258/), [Shwetak Patel](https://ubicomplab.cs.washington.edu/members/), [Daniel McDuff](https://www.microsoft.com/en-us/research/people/damcduff/), “Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement”, NeurIPS 2020, Oral Presentation (105 out of 9454 submissions)´
 
 ## Contact
 
