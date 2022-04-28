@@ -56,10 +56,15 @@ examples:
 python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN --database_name MIX2
 
 
+
+Issues:
+
+In PPTS_CAN, the frame rate used is derived from the video length used (which results from the data sets). This must still be passed in generalized form in the layers.
+
 ## Inference
 
 `python code/predict_vitals_oneVideo.py --video_path [VIDEO_PATH] --save_dir [SAVE_PATH] --trained_model [CHECKPOINT_PATH]
-        --model_name [e.g., TS_CAN, PTS_CAN, PPTS_CAN] --parameter [e.g., "bpm,sdnn, pnn50, lfhf"]`
+        --model_name [e.g., TS_CAN, PTS_CAN, PPTS_CAN] --parameter [e.g., "bpm, sdnn, pnn50, lfhf"]`
 
 ## Path dependencies in the following scripts
 final_evaluation.py
@@ -82,9 +87,9 @@ layer_output.py
 In the current scripts, the data has been divided into the folders 1)Training and 2)Validation.
 
 ## evaluation_iPhys.py
-Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHROM) with the same procedure and products as in the finalEvaluation.py script.
+Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHROM) with the same procedure and products as in the finalEvaluation.py script. They are located in the same folder as the ground truth files.
 
-Prerequisites:
+### Requirements:
 Predictions of the models, saved as a .txt file with the names: `*GC.txt`, `*ICA_POH.txt`, `*CHROM.txt` 
 #### Note
 
