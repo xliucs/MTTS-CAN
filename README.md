@@ -56,8 +56,7 @@ examples:
 python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN --database_name MIX2
 
 
-
-Issues:
+#### Issues:
 
 In PPTS_CAN, the frame rate used is derived from the video length used (which results from the data sets). This must still be passed in generalized form in the layers.
 
@@ -91,10 +90,6 @@ Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHR
 
 ### Requirements:
 Predictions of the models, saved as a .txt file with the names: `*GC.txt`, `*ICA_POH.txt`, `*CHROM.txt` 
-#### Note
-
-During the inference, the program will generate a sample pre-processed frame. Please ensure it is in portrait orientation. If not, you can comment out line 30 (rotation) in the `inference_preprocess.py`.
-
 
 ## Requirements
 
