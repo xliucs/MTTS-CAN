@@ -86,10 +86,13 @@ layer_output.py
 In the current scripts, the data has been divided into the folders 1)Training and 2)Validation.
 
 ## evaluation_iPhys.py
-Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHROM) with the same procedure and products as in the finalEvaluation.py script. They are located in the same folder as the ground truth files.
+Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHROM) with the same procedure and products as in the finalEvaluation.py script. 
 
 ### Requirements:
 Predictions of the models, saved as a .txt file with the names: `*GC.txt`, `*ICA_POH.txt`, `*CHROM.txt` 
+
+They are located in the same folder as the ground truth files.
+
 
 ## Requirements
 
