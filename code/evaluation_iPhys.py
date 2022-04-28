@@ -1,8 +1,6 @@
-from aifc import Error
 import numpy as np
 import scipy.io
 import xlsxwriter
-from model import CAN, CAN_3D, PPTS_CAN, PTS_CAN, TS_CAN, Hybrid_CAN
 import h5py
 import os
 import matplotlib.pyplot as plt
@@ -26,27 +24,7 @@ def write_header(worksheet):
                 'sd1-pred', 'sd1_truth', 'sd2_pred', 'sd2_truth', 'MAE']
     for index in range(len(header)):
         worksheet.write(0,index, header[index])
-
-def prepare_3D_CAN(dXsub):
-    frame_depth = 10
-    num_window = int(dXsub.shape[0]) - frame_depth + 1
-    tempX = np.array([dXsub[f:f + frame_depth, :, :, :] # (491, 10, 36, 36 ,6) (169, 10, 36, 36, 6)
-                    for f in range(num_window)])
-    tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
-    tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
-    return tempX
-
-def prepare_Hybrid_CAN(dXsub):
-    frame_depth = 10
-    num_window = int(dXsub.shape[0]) - frame_depth + 1
-    tempX = np.array([dXsub[f:f + frame_depth, :, :, :] # (169, 10, 36, 36, 6)
-                        for f in range(num_window)])
-    tempX = np.swapaxes(tempX, 1, 3) # (169, 36, 36, 10, 6)
-    tempX = np.swapaxes(tempX, 1, 2) # (169, 36, 36, 10, 6)
-    motion_data = tempX[:, :, :, :, :3]
-    apperance_data = np.average(tempX[:, :, :, :, -3:], axis=-2)
-    return motion_data, apperance_data
-
+        
 def predict_vitals(worksheet, video_path, save_dir):
     mms = MinMaxScaler()
     
@@ -105,6 +83,7 @@ def predict_vitals(worksheet, video_path, save_dir):
             truth_path = data_path + "/BP_mmHg.txt"
         else:
             return print("Error in finding the ground truth signal...")
+       
         if database_name != "BP4D":
             gound_truth_file = h5py.File(truth_path, "r")
             pulse_truth = gound_truth_file["pulse"]   ### range ground truth from 0 to 1
@@ -130,11 +109,6 @@ def predict_vitals(worksheet, video_path, save_dir):
         pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
         pulse_truth = np.array(mms.fit_transform(pulse_truth.reshape(-1,1))).flatten()
 
-        #pulse_pred = detrend(np.cumsum(pulse_pred), 100)
-        #[b_pulse_pred, a_pulse_pred] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
-        #pulse_pred = scipy.signal.filtfilt(b_pulse_pred, a_pulse_pred, np.double(pulse_pred))
-        #pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
-        
         ### same size #######
         if len(pulse_pred) > len(pulse_truth):
             pulse_pred = pulse_pred[:len(pulse_truth)]
@@ -199,14 +173,6 @@ def predict_vitals(worksheet, video_path, save_dir):
         plt.legend()
         plt.savefig(save_dir + database_name+ nameStr + method +".svg", format="svg")
 
-        ########### IBI #############
-        #ibi_truth = working_data_truth['RR_list_cor']
-        #print(ibi_truth)
-        #ibi_pred = working_data_pred['RR_list_cor']
-        #print(ibi_pred)
-        ######### HRV featurs ##############
-        #print("HRV Truth:  ",measures_truth)
-        #print("HRV Pred:  ", measures_pred)
         ######### Metrics ##############
         # MSE:
         MAE = metrics.mean_absolute_error(pulse_truth, pulse_pred)

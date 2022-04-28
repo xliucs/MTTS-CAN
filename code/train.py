@@ -2,6 +2,8 @@
 Training Script for Multi-Task Temporal Shift Attention Networks for On-Device
 Contactless Vitals Measurement
 Author: Xin Liu, Daniel McDuff
+
+Further development: Sarah Quehl
 '''
 # %%
 from __future__ import print_function
@@ -12,7 +14,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 from xmlrpc.client import boolean
-from losses import negPearsonLoss, negPearsonLoss_onlyPeaks, gaussian_loss, MAPE_parameter_loss, time_error_loss
+from losses import negPearsonLoss, gaussian_loss, MAPE_parameter_loss, time_error_loss
 import numpy as np
 import scipy.io
 import tensorflow as tf
@@ -68,12 +70,12 @@ parser.add_argument('-save', '--save_all', type=int, default=1,
 parser.add_argument('-resp', '--respiration', type=int, default=0,
                     help='train with resp or not')
 parser.add_argument('-database', '--database_name', type=str, 
-                    default="MIX", help='Which database')  
-parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE") 
-parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE") 
+                    default="MIX2", help='Which database')  
+parser.add_argument('-lf1', '--loss_function1', type=str, default="MSE", help="MSE,NegPea") 
+parser.add_argument('-lf2', '--loss_function2', type=str, default="MSE", help="MSE,NegPea, Gauss_Peak, time_Error") 
 parser.add_argument('-min', '--decrease_database', type=boolean, default=False)                       
 parser.add_argument('-ml', '--maxFrames_video', type=int, default=2050, help="frames")
-parser.add_argument('-p', '--parameter', default=None)
+parser.add_argument('-p', '--parameter', default=None, help="bpm, sdnn, pnn50, lfhf")
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))  # pretty print args

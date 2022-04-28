@@ -72,7 +72,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     dXsub = np.concatenate((dXsub, Xsub), axis = 3)
     return dXsub, fps
 
-def preprocess_raw_frames(framePath, dim=36):
+def preprocess_raw_frames(framePath, fps=25, dim=36):
     ####### collect frames #########
     frames = glob(framePath + "/*.jpg")
     #########################################################################
@@ -121,7 +121,6 @@ def preprocess_raw_frames(framePath, dim=36):
     #########################################################################
     # Plot an example of data after preprocess
     dXsub = np.concatenate((dXsub, Xsub), axis = 3)
-    fps = 25
     return dXsub, fps
 
 def detrend(signal, Lambda):

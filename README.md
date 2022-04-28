@@ -47,7 +47,11 @@ possible.
 
 ## Basis Paper
 The code is based on the following paper:
-#### [Xin Liu](https://homes.cs.washington.edu/~xliu0/), [Josh Fromm](https://www.linkedin.com/in/josh-fromm-2a4a2258/), [Shwetak Patel](https://ubicomplab.cs.washington.edu/members/), [Daniel McDuff](https://www.microsoft.com/en-us/research/people/damcduff/), “Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement”, NeurIPS 2020, Oral Presentation (105 out of 9454 submissions)
+#### [Xin Liu](https://homes.cs.washington.edu/~xliu0/), [Josh Fromm](https://www.linkedin.com/in/josh-fromm-2a4a2258/), [Shwetak Patel](https://ubicomplab.cs.washington.edu/members/), [Daniel McDuff](https://www.microsoft.com/en-us/research/people/damcduff/), “Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement”, NeurIPS 2020, Oral Presentation (105 out of 9454 submissions)´
+
+
+### Preprocessing
+It is recommended to save the important information of each video into a hdf5-file using the `prepare_databases.py` script. Here pixel data, ground truth and various parameters are integrated.
 
 ## Training
 
@@ -55,17 +59,31 @@ The code is based on the following paper:
 
 examples:
 
-python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN --database_name MIX
-
-python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN
+python code/train.py --exp_name test1 --data_dir /mnt/share/StudiShare/sarah/Databases/ --temporal TS_CAN --database_name MIX2
 
 
 ## Inference
 
-`python code/predict_vitals.py --video_path [VIDEO_PATH]`
+`python code/predict_vitals_oneVideo.py --video_path [VIDEO_PATH] --save_dir [SAVE_PATH] --trained_model [CHECKPOINT_PATH]
+        --model_name [e.g., TS_CAN, PTS_CAN, PPTS_CAN] --parameter [e.g., "bpm,sdnn, pnn50, lfhf"]`
 
-The default video sampling rate is 30Hz.
+#### Path dependencies in the following scripts
+final_evaluation.py
+model_evaluation.py
+pre_process.py
+predict_vitals_comparison.py
+predict_vitals_new.py
+predict_vitals_oneVideo.py
+predict.vitals.py
+layer_output.py
 
+In the current scripts, the data has been divided into the folders 1)Training and 2)Validation.
+
+### evaluation_iPhys.py
+Script for evaluating the prediction of the iPhys models (GreenChannel, POH, CHROM) with the same procedure and products as in the finalEvaluation.py script.
+
+Prerequisites:
+Predictions of the models, saved as a .txt file with the names: `*GC.txt`, `*ICA_POH.txt`, `*CHROM.txt` 
 #### Note
 
 During the inference, the program will generate a sample pre-processed frame. Please ensure it is in portrait orientation. If not, you can comment out line 30 (rotation) in the `inference_preprocess.py`.

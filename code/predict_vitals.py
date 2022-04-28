@@ -5,12 +5,11 @@ import scipy.io
 import sys
 import argparse
 sys.path.append('../')
-from model import Attention_mask, MTTS_CAN, TS_CAN
+from model import TS_CAN
 import h5py
 import matplotlib.pyplot as plt
 from scipy.signal import butter
 from inference_preprocess import preprocess_raw_video, detrend
-from sklearn.preprocessing import MinMaxScaler
 from hrvanalysis import get_time_domain_features, get_frequency_domain_features
 
 def predict_vitals(args):

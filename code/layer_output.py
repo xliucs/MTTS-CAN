@@ -1,7 +1,4 @@
-
-
 import os
-
 import scipy
 from model import CAN_3D, PPTS_CAN, PTS_CAN, TS_CAN
 from data_generator import DataGenerator
