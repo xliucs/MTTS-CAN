@@ -60,6 +60,7 @@ def predict_vitals(args):
     [b_pulse_tr, a_pulse_tr] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_truth = scipy.signal.filtfilt(b_pulse_tr, a_pulse_tr, np.double(pulse_truth))
     pulse_truth = np.array(mms.fit_transform(pulse_truth.reshape(-1,1))).flatten()
+    pulse_truth = pulse_truth[0: dXsub_len]
 
     ########### Peaks ###########
     working_data_pred, measures_pred = hp.process(pulse_pred, fs, calc_freq=True)
@@ -67,26 +68,34 @@ def predict_vitals(args):
     peaks_pred = working_data_pred['peaklist']
     peaks_truth = working_data_truth['peaklist']
 
-     ########## Plot ##################
+    ######## x-axis: time #########
+    duration_vid = dXsub_len/fs
+    x_axis = np.linspace(0, duration_vid, dXsub_len)
+
+    ########## Plot ##################
     plt.figure() #subplot(211)
-    plt.plot(pulse_pred, "x", label='Prediction')
-    plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
-    plt.plot(peaks_pred, pulse_pred[peaks_pred], "o")
+    plt.plot(x_axis, pulse_pred, label='Prediction', color ='#E6001A')
+    plt.plot(x_axis[peaks_truth], pulse_truth[peaks_truth], "x", color="#721085")
+    plt.plot(x_axis[peaks_pred], pulse_pred[peaks_pred], "x", color ='#E6001A')
     plt.title('Pulse Prediction')
-    plt.plot(pulse_truth, "o", label='ground truth')
+    plt.xlabel("time (s)")
+    plt.ylabel("normalized Signal [a.u.]")
+    plt.plot(x_axis, pulse_truth, label='ground truth', color="#721085")
     plt.legend()
 
     plt.figure()
     plt.subplot(211)
-    plt.plot(pulse_truth, "o", label='Ground truth')
-    plt.plot(peaks_truth, pulse_truth[peaks_truth], "x")
-    plt.ylabel("normalized Signal")
+    plt.plot(x_axis, pulse_truth, label='Ground truth')
+    plt.plot(x_axis[peaks_truth], pulse_truth[peaks_truth], "x")
+    plt.ylabel("normalized Signal [a.u.]")
+    plt.xlabel("time (s)")
     plt.title('Ground truth')
     plt.subplot(212)
-    plt.plot(pulse_pred, "x", label='Prediction')
-    plt.plot(peaks_pred, pulse_pred[peaks_pred], "x")
+    plt.plot(x_axis, pulse_pred, label='Prediction')
+    plt.plot(x_axis[peaks_pred], pulse_pred[peaks_pred], "x")
     plt.title("Prediction")
-    plt.ylabel("normalized Signal")
+    plt.ylabel("normalized Signal [a.u.]")
+    plt.xlabel("time (s)")
     plt.legend()
     plt.show()
 

@@ -62,10 +62,10 @@ def predict_vitals(args):
 
     print("path:  ",sample_data_path)
     if sample_data_path[-4:] == ".avi":
-        dXsub, fs = preprocess_raw_video(sample_data_path, dim=36)
+        dXsub, fps = preprocess_raw_video(sample_data_path, dim=36)
     else: 
-        dXsub, fs = preprocess_raw_frames(sample_data_path, dim=36)
-    print('dXsub shape', dXsub.shape, "fs: ", fs)
+        dXsub, fps = preprocess_raw_frames(sample_data_path, dim=36)
+    print('dXsub shape', dXsub.shape, "fps: ", fps)
     
     if model_name == "PPTS_CAN":
         dXsub_len = (dXsub.shape[0] // (frame_depth*10))  * (frame_depth*10)
@@ -118,13 +118,17 @@ def predict_vitals(args):
         parameter_out = yptest[2]
      
     pulse_pred = detrend(np.cumsum(pulse_pred), 100)
-    [b_pulse_pred, a_pulse_pred] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
+    [b_pulse_pred, a_pulse_pred] = butter(1, [0.75 / fps * 2, 2.5 / fps * 2], btype='bandpass')
     pulse_pred = scipy.signal.filtfilt(b_pulse_pred, a_pulse_pred, np.double(pulse_pred))
     pulse_pred = np.array(mms.fit_transform(pulse_pred.reshape(-1,1))).flatten()
     
     ########### Peaks ###########
-    working_data_pred, measures_pred = hp.process(pulse_pred, fs, calc_freq=True)
+    working_data_pred, measures_pred = hp.process(pulse_pred, fps, calc_freq=True)
     peaks_pred = working_data_pred['peaklist']
+
+    ######## x-axis: time #########
+    duration_vid = dXsub_len/fps
+    x_axis = np.linspace(0, duration_vid, dXsub_len)
 
     ########## Plot ##################
     peaks_pred_new = []
@@ -136,11 +140,11 @@ def predict_vitals(args):
     print(path_plot)
    
     plt.figure() #subplot(211)
-    plt.plot(pulse_pred[400:700], "#E6001A", label='rPPG signal')
-    plt.plot(peaks_pred_new, pulse_pred[400:700][peaks_pred_new], "x", color ='#E6001A')
+    plt.plot(x_axis, pulse_pred, "#E6001A", label='rPPG signal')
+    plt.plot(x_axis[peaks_pred], pulse_pred[peaks_pred], "x", color ='#E6001A')
     plt.title('rPPG signal')
     plt.ylabel("normalized Signal [a.u.]")
-    plt.xlabel("time (samples)")
+    plt.xlabel("time (s)")
     plt.legend()
     plt.savefig(path_plot)
 
@@ -171,6 +175,4 @@ if __name__ == "__main__":
 
     predict_vitals(args)
 
-#python code/predict_vitals_oneVideo.py --video_path "C:\Users\sarah\OneDrive\Desktop\UBFC\DATASET_2\subject4\vid.avi" 
-# --trained_model "D:\Databases\4)Results\Version5\TS_CAN\cv_0_epoch24_model.hdf5" --model_name "TS_CAN"
-# --save_dir "D:\Databases\Test"
+#python code/predict_vitals_oneVideo.py --video_path "C:\Users\sarah\OneDrive\Desktop\UBFC\DATASET_2\subject4\vid.avi" --trained_model "D:\Databases\4)Results\Version5\TS_CAN\cv_0_epoch24_model.hdf5" --model_name "TS_CAN" --save_dir "D:\Databases\Test"
