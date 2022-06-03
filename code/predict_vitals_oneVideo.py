@@ -63,6 +63,8 @@ def predict_vitals(args):
     print("path:  ",sample_data_path)
     if sample_data_path[-4:] == ".avi":
         dXsub, fps = preprocess_raw_video(sample_data_path, dim=36)
+    elif sample_data_path[-4:] == ".mp4":
+        dXsub, fps = preprocess_raw_video(sample_data_path, dim=36)
     else: 
         dXsub, fps = preprocess_raw_frames(sample_data_path, dim=36)
     print('dXsub shape', dXsub.shape, "fps: ", fps)
