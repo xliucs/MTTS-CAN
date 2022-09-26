@@ -16,7 +16,7 @@
 | ------------- | ------------- | ------------- | ------------- | ------------- |
 | TS-CAN  | 1.47  | 1.56%  | 2.31  | 0.99  |
 
-
+Pleae use [rPPG-Toolbox] (https://github.com/ubicomplab/rPPG-Toolbox) for training.
 ## New Pre-Trained Model (Updated Nov 2021)
 
 Working in pregress. Check back later! 
